@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
+import '../main_nav/main_nav_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,16 +46,15 @@ class _LoginScreenState extends State<LoginScreen> {
       loading = false;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('سيتم ربط تسجيل الدخول بالـ API'),
-      ),
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const MainNavScreen()),
+      (route) => false,
     );
   }
 
   Future<void> loginWithGoogle() async {
     // TODO: اربطيها بحزمة google_sign_in + استدعاء API تسجيل الدخول بجوجل.
-    // مهم أمنيًا: التحقق من التوكن يكون من طرف السيرفر دائمًا، مو بالتطبيق فقط.
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('سيتم ربط الدخول عبر Google')),
     );
@@ -68,10 +68,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void continueAsGuest() {
-    // TODO: وجّهيها لصفحتك الرئيسية الفعلية لما تكون جاهزة، بدل ما تبقى بدون تنقل.
-    // استخدمي pushAndRemoveUntil عشان الضيف ما يقدر يرجع بزر الرجوع لشاشة الدخول.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('الدخول كضيف — وجّهيها للصفحة الرئيسية')),
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const MainNavScreen(isGuest: true)),
+      (route) => false,
     );
   }
 
@@ -92,7 +92,6 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 25),
 
-                // الشعار
                 Image.asset(
                   'lib/assets/alamal.png',
                   width: 90,
@@ -129,7 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 28),
 
-                // رقم الجوال
                 TextFormField(
                   controller: phoneController,
                   keyboardType: TextInputType.phone,
@@ -182,7 +180,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 13),
 
-                // كلمة المرور
                 TextFormField(
                   controller: passwordController,
                   obscureText: obscurePassword,
@@ -245,7 +242,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
 
-                // نسيت كلمة المرور
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -270,7 +266,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 5),
 
-                // زر تسجيل الدخول
                 SizedBox(
                   width: double.infinity,
                   height: 47,
@@ -310,7 +305,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 22),
 
-                // ===== أو الدخول عبر =====
                 Row(
                   children: const [
                     Expanded(child: Divider(color: Color(0xffDDE5EF))),
@@ -346,7 +340,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 18),
 
-                // إنشاء حساب
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -362,8 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                const CreateAccountScreen(),
+                            builder: (_) => const CreateAccountScreen(),
                           ),
                         );
                       },
@@ -379,7 +371,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
 
-                // الدخول كضيف
                 TextButton(
                   onPressed: continueAsGuest,
                   child: const Text(
@@ -400,8 +391,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// زر دائري لأزرار الدخول الاجتماعي (Google / Apple) —
-/// يقرأ الأيقونة من assets، ولو مفقودة يرجع لأيقونة بديلة بدل ما يكسر التطبيق.
 class _SocialButton extends StatelessWidget {
   final String assetPath;
   final IconData fallbackIcon;

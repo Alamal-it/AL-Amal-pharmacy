@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'auth/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,21 +16,26 @@ class AlamalApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'صيدلية الأمل',
 
+      // ===== دعم اللغة العربية والـ RTL الحقيقي =====
+      locale: const Locale('ar'),
+      supportedLocales: const [
+        Locale('ar'), // العربية (اللغة الأساسية)
+        Locale('en'), // احتياطي لو احتجنا Localization لاحقاً
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xffF7F9FC),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xff0E4595),
         ),
-        fontFamily: 'Arial',
+        fontFamily: 'Cairo',
       ),
-
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox(),
-        );
-      },
 
       home: const SplashScreen(),
     );

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../models/product.dart';
 import '../services/product_service.dart';
-import '../widgets/product_card.dart';
 import '../widgets/promo_banner_carousel.dart';
 import '../widgets/category_icon_item.dart';
 import '../widgets/countdown_timer.dart';
 import '../widgets/deal_card.dart';
 import '../auth/login_screen.dart';
+import '../widgets/delivery_option_sheet.dart';
+import '../models/delivery_address.dart';
+import 'categories_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool isGuest;
@@ -25,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final TextEditingController searchController = TextEditingController();
   String searchQuery = '';
+
+  DeliveryMode? deliveryMode;
+  DeliveryAddress? selectedAddress;
 
   final List<PromoBanner> banners = const [
     PromoBanner(
@@ -69,6 +74,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> openDeliveryOptions() async {
+    final result = await DeliveryOptionSheet.show(context);
+
+    if (result != null && mounted) {
+      setState(() {
+        deliveryMode = result.mode;
+        selectedAddress = result.address;
+      });
+    }
+  }
+
+  void goToCategories() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -77,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 30, 16, 0),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,8 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: const Text(
                                   'دخول / تسجيل',
                                   style: TextStyle(
-                                    color: AppColors.green,
-                                    fontSize: 12,
+                                    color: AppColors.green,fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -121,33 +143,48 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: const [
-                                  Text(
-                                    'التوصيل إلى المنزل',
-                                    style: TextStyle(
-                                      color: AppColors.primaryDark,
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
+                          child: InkWell(
+                            onTap: openDeliveryOptions,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      deliveryMode == DeliveryMode.pickup
+                                          ? 'استلام من الصيدلية'
+                                          : (selectedAddress != null
+                                              ? 'التوصيل إلى ${selectedAddress!.label}'
+                                              : 'التوصيل إلى المنزل'),
+                                      style: const TextStyle(
+                                        color: AppColors.primaryDark,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(width: 4),
-                                  Icon(Icons.keyboard_arrow_down,
-                                      size: 16, color: AppColors.primaryDark),
-                                ],
-                              ),
-                              const Text(
-                                'حي السويس، جازان',
-                                style: TextStyle(
-                                  color: AppColors.textGray,
-                                  fontSize: 10,
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.keyboard_arrow_down,
+                                        size: 16,
+                                        color: AppColors.primaryDark),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                Text(
+                                  deliveryMode == DeliveryMode.pickup
+                                      ? 'اختاري الصيدلية الأقرب لك'
+                                      : (selectedAddress != null
+                                          ? '${selectedAddress!.addressLine}, ${selectedAddress!.city}'
+                                          : 'حي السويس، جازان'),
+                                  style: const TextStyle(
+                                    color: AppColors.textGray,
+                                    fontSize: 10,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -155,26 +192,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(height: 10),
 
-                    // ===== البحث + المفضلة + الصورة الشخصية =====
+                    // ===== البحث + المفضلة + أيقونة الفئات =====
                     Row(
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'ع',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                        InkWell(
+                          onTap: goToCategories,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: AppColors.green,
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.grid_view_rounded,
+                              color: Colors.white,
+                              size: 22,),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Container(
                             height: 42,
@@ -254,8 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // ===== البانر المتحرك (يختفي أثناء البحث) =====
                     if (searchQuery.isEmpty) ...[
                       PromoBannerCarousel(
-                        banners: banners,
-                        onTapButton: (banner) {
+                        banners: banners,onTapButton: (banner) {
                           // TODO: فتح شاشة العروض/الفئة المرتبطة بالبانر لما تجهز.
                         },
                       ),
@@ -305,9 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           TextButton(
-                            onPressed: () {
-                              // TODO: فتح شاشة "جميع الفئات" لما تجهز.
-                            },
+                            onPressed: goToCategories,
                             child: const Text(
                               'عرض الكل',
                               style: TextStyle(
@@ -355,8 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          searchQuery.isEmpty
-                              ? 'عروض تنتهي قريباً'
+                          searchQuery.isEmpty? 'عروض تنتهي قريباً'
                               : 'نتائج البحث',
                           style: const TextStyle(
                             color: AppColors.primaryDark,
@@ -384,15 +418,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: FutureBuilder<List<Product>>(
                   future: productsFuture,
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
                       return const Center(
-                        child:
-                            CircularProgressIndicator(color: AppColors.primary),
+                        child: CircularProgressIndicator(
+                            color: AppColors.primary),
                       );
                     }
 
                     final allProducts = snapshot.data ?? [];
-
                     final products = searchQuery.isEmpty
                         ? allProducts
                         : allProducts
@@ -410,13 +444,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }
 
-                    return ListView.separated(
+                    return ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
+                      physics: const BouncingScrollPhysics(),
                       itemCount: products.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
                       itemBuilder: (context, index) {
-                        return DealCard(product: products[index]);
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: DealCard(product: products[index]),
+                        );
                       },
                     );
                   },

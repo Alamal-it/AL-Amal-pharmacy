@@ -44,14 +44,14 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               Image.asset(
                 'lib/assets/alamal.png',
-                width: 190,
-                height: 190,
+                width: 200,
+                height: 200,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
                   // فولباك آمن — لو الصورة مفقودة أو اسمها تغيّر، التطبيق ما يكسر
                   return const Icon(
                     Icons.local_pharmacy_outlined,
-                    size: 120,
+                    size: 155,
                     color: Color(0xff0E4595),
                   );
                 },

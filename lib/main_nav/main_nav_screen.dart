@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../home/home_screen.dart';
-
+import '../home/categories_screen.dart';
 class MainNavScreen extends StatefulWidget {
   final bool isGuest;
 
@@ -22,20 +22,22 @@ class _MainNavScreenState extends State<MainNavScreen> {
     _NavItemData(icon: Icons.card_giftcard_outlined, label: 'العروض'),
   ];
 
-  Widget bodyForIndex(int index) {
-    switch (index) {
-      case 2:
-        return HomeScreen(isGuest: widget.isGuest);
-      default:
-        // TODO: استبدال هذا بالشاشة الفعلية (سلة، فئات، عروض، حسابي) لما نبنيها.
-        return Center(
-          child: Text(
-            '${items[index].label} — قريباً',
-            style: const TextStyle(color: AppColors.textGray),
-          ),
-        );
-    }
+Widget bodyForIndex(int index) {
+  switch (index) {
+    case 2:
+      return HomeScreen(isGuest: widget.isGuest);
+    case 3:
+      return const CategoriesScreen();
+    default:
+      // TODO: استبدال هذا بالشاشة الفعلية (سلة، عروض، حسابي) لما نبنيها.
+      return Center(
+        child: Text(
+          '${items[index].label} — قريباً',
+          style: const TextStyle(color: AppColors.textGray),
+        ),
+      );
   }
+}
 
   @override
   Widget build(BuildContext context) {

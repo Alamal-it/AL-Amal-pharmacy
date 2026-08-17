@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
 import '../main_nav/main_nav_screen.dart';
+import '../services/user_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  // لو true: يعني وصلنا لهذي الشاشة من منتصف عملية (زي الدفع)،
+  // فبعد تسجيل الدخول نرجع لنفس المكان بدل ما نصفّر التطبيق.
+  final bool fromCheckout;
+
+  const LoginScreen({
+    super.key,
+    this.fromCheckout = false,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -13,8 +21,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController phoneController =
+      TextEditingController();
+
+  final TextEditingController passwordController =
+      TextEditingController();
 
   bool obscurePassword = true;
   bool loading = false;
@@ -41,21 +52,32 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     // TODO: هذا مكان استدعاء الـ API الحقيقي لتسجيل الدخول.
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(
+      const Duration(milliseconds: 300),
+    );
 
     if (!mounted) return;
+
+    // ===== تحديث حالة تسجيل الدخول في التطبيق كامل =====
+    UserService.instance.isLoggedIn = true;
+    UserService.instance.phone = phoneController.text.trim();
 
     setState(() {
       loading = false;
     });
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const MainNavScreen(),
-      ),
-      (route) => false,
-    );
+    if (widget.fromCheckout) {
+      // رجّعي لنفس المكان اللي جينا منه مع إشارة نجاح.
+      Navigator.pop(context, true);
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MainNavScreen(),
+        ),
+        (route) => false,
+      );
+    }
   }
 
   // =========================
@@ -86,15 +108,21 @@ class _LoginScreenState extends State<LoginScreen> {
   // الدخول كضيف
   // =========================
   void continueAsGuest() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const MainNavScreen(
-          isGuest: true,
+    if (widget.fromCheckout) {
+      // إذا جاي من الدفع وضغط "دخول كضيف"،
+      // ما نقدر نكمل الطلب.
+      Navigator.pop(context, false);
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MainNavScreen(
+            isGuest: true,
+          ),
         ),
-      ),
-      (route) => false,
-    );
+        (route) => false,
+      );
+    }
   }
 
   // =========================
@@ -127,34 +155,63 @@ class _LoginScreenState extends State<LoginScreen> {
                         autovalidateMode:
                             AutovalidateMode.onUserInteraction,
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
                           children: [
+                            // =========================
+                            // زر الرجوع
+                            // =========================
+                            if (widget.fromCheckout)
+                              Align(
+                                alignment:
+                                    Alignment.centerRight,
+                                child: IconButton(
+                                  onPressed: () =>
+                                      Navigator.pop(
+                                    context,
+                                    false,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.arrow_forward,
+                                    color: Color(0xff0E4595),
+                                  ),
+                                ),
+                              ),
+
                             // =========================
                             // الشعار
                             // =========================
-                            Image.asset(
-                              'lib/assets/alamal.png',
-                              width: 90,
-                              height: 90,
-                              fit: BoxFit.contain,
-                              errorBuilder:
-                                  (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.local_pharmacy_outlined,
-                                  size: 70,
-                                  color: Color(0xff0E4595),
-                                );
-                              },
-                            ),
+                            if (!widget.fromCheckout)
+                              Image.asset(
+                                'lib/assets/alamal.png',
+                                width: 90,
+                                height: 90,
+                                fit: BoxFit.contain,
+                                errorBuilder:
+                                    (
+                                      context,
+                                      error,
+                                      stackTrace,
+                                    ) {
+                                  return const Icon(
+                                    Icons
+                                        .local_pharmacy_outlined,
+                                    size: 70,
+                                    color: Color(0xff0E4595),
+                                  );
+                                },
+                              ),
 
                             const SizedBox(height: 15),
 
                             // =========================
                             // العنوان
                             // =========================
-                            const Text(
-                              'تسجيل الدخول',
-                              style: TextStyle(
+                            Text(
+                              widget.fromCheckout
+                                  ? 'سجّلي الدخول لإكمال الطلب'
+                                  : 'تسجيل الدخول',
+                              style: const TextStyle(
                                 color: Color(0xff123B72),
                                 fontSize: 19,
                                 fontWeight: FontWeight.w800,
@@ -166,10 +223,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             // =========================
                             // الوصف
                             // =========================
-                            const Text(
-                              'سجّل دخولك للوصول إلى خدمات صيدلية الأمل',
+                            Text(
+                              widget.fromCheckout
+                                  ? 'سجّلي دخولك عشان نكمل طلبك ونتواصل معك'
+                                  : 'سجّل دخولك للوصول إلى خدمات صيدلية الأمل',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Color(0xff7D8CA3),
                                 fontSize: 11.5,
                               ),
@@ -183,7 +242,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextFormField(
                               controller: phoneController,
                               keyboardType: TextInputType.phone,
-                              textInputAction: TextInputAction.next,
+                              textInputAction:
+                                  TextInputAction.next,
                               autofillHints: const [
                                 AutofillHints.telephoneNumber,
                               ],
@@ -202,14 +262,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                     color: Color(0xffDDE5EF),
                                   ),
                                 ),
-                                enabledBorder: OutlineInputBorder(
+                                enabledBorder:
+                                    OutlineInputBorder(
                                   borderRadius:
                                       BorderRadius.circular(8),
                                   borderSide: const BorderSide(
                                     color: Color(0xffDDE5EF),
                                   ),
                                 ),
-                                focusedBorder: OutlineInputBorder(
+                                focusedBorder:
+                                    OutlineInputBorder(
                                   borderRadius:
                                       BorderRadius.circular(8),
                                   borderSide: const BorderSide(
@@ -243,9 +305,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             // كلمة المرور
                             // =========================
                             TextFormField(
-                              controller: passwordController,
+                              controller:
+                                  passwordController,
                               obscureText: obscurePassword,
-                              textInputAction: TextInputAction.done,
+                              textInputAction:
+                                  TextInputAction.done,
                               autofillHints: const [
                                 AutofillHints.password,
                               ],
@@ -267,10 +331,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   },
                                   icon: Icon(
                                     obscurePassword
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined,
-                                    color:
-                                        const Color(0xff7D8CA3),
+                                        ? Icons
+                                            .visibility_off_outlined
+                                        : Icons
+                                            .visibility_outlined,
+                                    color: const Color(
+                                      0xff7D8CA3,
+                                    ),
                                   ),
                                 ),
                                 filled: true,
@@ -282,14 +349,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                     color: Color(0xffDDE5EF),
                                   ),
                                 ),
-                                enabledBorder: OutlineInputBorder(
+                                enabledBorder:
+                                    OutlineInputBorder(
                                   borderRadius:
                                       BorderRadius.circular(8),
                                   borderSide: const BorderSide(
                                     color: Color(0xffDDE5EF),
                                   ),
                                 ),
-                                focusedBorder: OutlineInputBorder(
+                                focusedBorder:
+                                    OutlineInputBorder(
                                   borderRadius:
                                       BorderRadius.circular(8),
                                   borderSide: const BorderSide(
@@ -315,28 +384,31 @@ class _LoginScreenState extends State<LoginScreen> {
                             // =========================
                             // نسيت كلمة المرور
                             // =========================
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const ForgotPasswordScreen(),
+                            if (!widget.fromCheckout)
+                              Align(
+                                alignment:
+                                    Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const ForgotPasswordScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    'نسيت كلمة المرور؟',
+                                    style: TextStyle(
+                                      color: Color(0xff0E4595),
+                                      fontSize: 11.5,
+                                      fontWeight:
+                                          FontWeight.w700,
                                     ),
-                                  );
-                                },
-                                child: const Text(
-                                  'نسيت كلمة المرور؟',
-                                  style: TextStyle(
-                                    color: Color(0xff0E4595),
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
-                            ),
 
                             const SizedBox(height: 5),
 
@@ -347,7 +419,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: double.infinity,
                               height: 47,
                               child: ElevatedButton(
-                                onPressed: loading ? null : login,
+                                onPressed:
+                                    loading ? null : login,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor:
                                       const Color(0xff2EAD59),
@@ -355,7 +428,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   disabledBackgroundColor:
                                       const Color(0xffA9D7B8),
                                   elevation: 0,
-                                  shape: RoundedRectangleBorder(
+                                  shape:
+                                      RoundedRectangleBorder(
                                     borderRadius:
                                         BorderRadius.circular(7),
                                   ),
@@ -378,7 +452,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         'تسجيل الدخول',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight:
+                                              FontWeight.bold,
                                         ),
                                       ),
                               ),
@@ -434,9 +509,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       Icons.g_mobiledata,
                                   onTap: loginWithGoogle,
                                 ),
-
                                 const SizedBox(width: 16),
-
                                 _SocialButton(
                                   assetPath:
                                       'lib/assets/apple_icon.png',
@@ -458,7 +531,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const Text(
                                   'ليس لديك حساب؟',
                                   style: TextStyle(
-                                    color: Color(0xff7D8CA3),
+                                    color:
+                                        Color(0xff7D8CA3),
                                     fontSize: 11.5,
                                   ),
                                 ),
@@ -475,8 +549,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: const Text(
                                     'إنشاء حساب',
                                     style: TextStyle(
-                                      color: Color(0xff0E4595),
-                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          Color(0xff0E4595),
+                                      fontWeight:
+                                          FontWeight.bold,
                                       fontSize: 11.5,
                                     ),
                                   ),
@@ -487,17 +563,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             // =========================
                             // الدخول كضيف
                             // =========================
-                            TextButton(
-                              onPressed: continueAsGuest,
-                              child: const Text(
-                                'الدخول كضيف',
-                                style: TextStyle(
-                                  color: Color(0xff123B72),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 11.5,
+                            if (!widget.fromCheckout)
+                              TextButton(
+                                onPressed: continueAsGuest,
+                                child: const Text(
+                                  'الدخول كضيف',
+                                  style: TextStyle(
+                                    color:
+                                        Color(0xff123B72),
+                                    fontWeight:
+                                        FontWeight.w600,
+                                    fontSize: 11.5,
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),
@@ -549,7 +628,8 @@ class _SocialButton extends StatelessWidget {
           width: 22,
           height: 22,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
+          errorBuilder:
+              (context, error, stackTrace) {
             return Icon(
               fallbackIcon,
               size: 24,

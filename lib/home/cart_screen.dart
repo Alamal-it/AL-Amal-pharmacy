@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../services/cart_service.dart';
-import 'delivery_method_screen.dart';
+import '../services/user_service.dart';
+import '../widgets/delivery_option_sheet.dart';
+import 'guest_login_sheet.dart';
+import 'branch_picker_screen.dart';
+import 'payment_method_screen.dart';
+import 'delivery_review_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -125,10 +130,10 @@ class _CartScreenState extends State<CartScreen> {
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
                               width: 55,
-                              height: 55,
-                              color: AppColors.border.withOpacity(0.3),
+                              height: 55,color: AppColors.border.withOpacity(0.3),
                               child: const Icon(Icons.image_outlined,
-                                  color: AppColors.textGray),),
+                                  color: AppColors.textGray),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -223,10 +228,10 @@ class _CartScreenState extends State<CartScreen> {
                     Expanded(
                       child: Container(
                         height: 42,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),decoration: BoxDecoration(
                           border: Border.all(color: AppColors.border),
-                          borderRadius: BorderRadius.circular(10),),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         child: TextField(
                           controller: couponController,
                           textAlign: TextAlign.right,
@@ -274,14 +279,37 @@ class _CartScreenState extends State<CartScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              DeliveryMethodScreen(totalAmount: total),
-                        ),
-                      );
+                    onPressed: () async {
+                      // ===== بوابة تسجيل الضيف قبل إتمام الطلب =====
+                      if (!UserService.instance.isLoggedIn) {
+                        final loggedIn = await GuestLoginSheet.show(context);
+                        if (loggedIn != true || !mounted) return;
+                      }
+
+                      final result = await DeliveryOptionSheet.show(context);
+                      if (result == null || !mounted) return;
+
+                      if (result.mode == DeliveryMode.pickup) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                BranchPickerScreen(totalAmount: total),
+                          ),
+                        );
+                      } else {
+                        if (result.address != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DeliveryReviewScreen(
+                                address: result.address!,
+                                totalAmount: total,
+                              ),
+                            ),
+                          );
+                        }
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.green,
@@ -339,7 +367,8 @@ class _CartScreenState extends State<CartScreen> {
         width: 24,
         height: 24,
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(icon, size: 13, color: AppColors.primaryDark),
       ),

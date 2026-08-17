@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../models/product.dart';
-
+import '../services/cart_service.dart';
 class ProductDetailsScreen extends StatefulWidget {
   final Product product;
 
@@ -237,16 +237,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: ربط بمنطق سلة التسوق لما تجهز.
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content:
-                            Text('تمت إضافة $quantity × ${product.name} للسلة'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  },
+                onPressed: () {
+  CartService.instance.addToCart(product, quantity: quantity);
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content:
+          Text('تمت إضافة $quantity × ${product.name} للسلة'),
+      backgroundColor: AppColors.primary,
+    ),
+  );
+},
                   icon: const Icon(Icons.shopping_cart_outlined,
                       color: Colors.white),
                   label: const Text(

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../home/home_screen.dart';
 import '../home/categories_screen.dart';
+import '../home/cart_screen.dart';
+import '../services/cart_service.dart';
+
 class MainNavScreen extends StatefulWidget {
   final bool isGuest;
 
@@ -22,22 +25,40 @@ class _MainNavScreenState extends State<MainNavScreen> {
     _NavItemData(icon: Icons.card_giftcard_outlined, label: 'العروض'),
   ];
 
-Widget bodyForIndex(int index) {
-  switch (index) {
-    case 2:
-      return HomeScreen(isGuest: widget.isGuest);
-    case 3:
-      return const CategoriesScreen();
-    default:
-      // TODO: استبدال هذا بالشاشة الفعلية (سلة، عروض، حسابي) لما نبنيها.
-      return Center(
-        child: Text(
-          '${items[index].label} — قريباً',
-          style: const TextStyle(color: AppColors.textGray),
-        ),
-      );
+  @override
+  void initState() {
+    super.initState();
+    CartService.instance.addListener(_onCartChanged);
   }
-}
+
+  @override
+  void dispose() {
+    CartService.instance.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Widget bodyForIndex(int index) {
+    switch (index) {
+      case 2:
+        return HomeScreen(isGuest: widget.isGuest);
+      case 3:
+        return const CategoriesScreen();
+      case 1:
+        return const CartScreen();
+      default:
+        // TODO: استبدال هذا بالشاشة الفعلية (عروض، حسابي) لما نبنيها.
+        return Center(
+          child: Text(
+            '${items[index].label} — قريباً',
+            style: const TextStyle(color: AppColors.textGray),
+          ),
+        );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,26 +94,59 @@ Widget bodyForIndex(int index) {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: selected ? AppColors.primary : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          item.icon,
-                          color: selected ? Colors.white : AppColors.textGray,
-                          size: 20,
-                        ),
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? AppColors.primary
+                                  : Colors.transparent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              item.icon,
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.textGray,
+                              size: 20,
+                            ),
+                          ),
+                          if (index == 1 && CartService.instance.itemCount > 0)
+                            Positioned(
+                              top: -2,
+                              right: -2,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                    minWidth: 16, minHeight: 16),
+                                child: Text(
+                                  '${CartService.instance.itemCount}',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 3),
                       Text(
                         item.label,
                         style: TextStyle(
                           fontSize: 9,
-                          color: selected ? AppColors.primary : AppColors.textGray,
-                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                          color:
+                              selected ? AppColors.primary : AppColors.textGray,
+                          fontWeight:
+                              selected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ],

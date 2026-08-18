@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../core/app_colors.dart';
+import '../widgets/checkout_stepper.dart';
 import 'payment_method_screen.dart';
 
 class PharmacyBranch {
@@ -33,6 +34,7 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
 
   GoogleMapController? mapController;
   String? selectedBranchId;
+  final TextEditingController noteController = TextEditingController();
 
   // TODO: استبدال هذي القائمة بفروع حقيقية من الـ API لما يجهزها المدير.
   final List<PharmacyBranch> branches = const [
@@ -63,6 +65,12 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
   void initState() {
     super.initState();
     selectedBranchId = branches.first.id;
+  }
+
+  @override
+  void dispose() {
+    noteController.dispose();
+    super.dispose();
   }
 
   @override
@@ -98,6 +106,11 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const CheckoutStepper(currentStep: 0),
+          ),
+          const SizedBox(height: 10),
           Expanded(
             flex: 3,
             child: GoogleMap(
@@ -119,12 +132,11 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                   onTap: () => setState(() => selectedBranchId = branch.id),
                 );
               }).toSet(),
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
+              myLocationButtonEnabled: false,zoomControlsEnabled: false,
             ),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -132,23 +144,26 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                   BoxShadow(
                       color: Colors.black12,
                       blurRadius: 6,
-                      offset: Offset(0, -2)),],
+                      offset: Offset(0, -2)),
+                ],
               ),
-              child: Column(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 10),
-                    child: Text(
-                      'الصيدليات القريبة منك',
-                      style: TextStyle(
-                        color: AppColors.primaryDark,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Text(
+                        'الصيدليات القريبة منك',
+                        style: TextStyle(
+                          color: AppColors.primaryDark,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: ListView.separated(
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: branches.length,
                       separatorBuilder: (_, __) =>
@@ -169,10 +184,13 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.green.withOpacity(0.06)
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? AppColors.green
                                     : AppColors.border,
                                 width: isSelected ? 1.5 : 1,
                               ),
@@ -184,7 +202,7 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                                       ? Icons.radio_button_checked
                                       : Icons.radio_button_off,
                                   color: isSelected
-                                      ? AppColors.primary
+                                      ? AppColors.green
                                       : AppColors.border,
                                 ),
                                 const SizedBox(width: 10),
@@ -201,8 +219,7 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text(
+                                      const SizedBox(height: 2),Text(
                                         branch.address,
                                         style: const TextStyle(
                                           color: AppColors.textGray,
@@ -215,7 +232,8 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                                 Text(
                                   '${branch.distanceKm} كم',
                                   style: const TextStyle(
-                                    color: AppColors.primary,fontSize: 11.5,
+                                    color: AppColors.primary,
+                                    fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -225,41 +243,101 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                         );
                       },
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 47,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PaymentMethodScreen(
-                                totalAmount: widget.totalAmount,
+
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text(
+                            'هل تحتاج ملاحظة؟ (اختياري)',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: noteController,
+                            textAlign: TextAlign.right,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              hintText: 'مثال: اتصل قبل الوصول',
+                              hintStyle: const TextStyle(
+                                  fontSize: 12, color: AppColors.textGray),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryDark,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
-                        child: const Text(
-                          'تأكيد الفرع',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                    const Divider(color: AppColors.border),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${widget.totalAmount.toStringAsFixed(2)} ر.س',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          const Text(
+                            'إجمالي الطلب',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textGray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 47,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(context,
+                              MaterialPageRoute(
+                                builder: (_) => PaymentMethodScreen(
+                                  totalAmount: widget.totalAmount,
+                                ),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text(
+                            'تأكيد الفرع',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

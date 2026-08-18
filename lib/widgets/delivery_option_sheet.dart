@@ -30,6 +30,7 @@ class DeliveryOptionSheet extends StatefulWidget {
 }
 
 class _DeliveryOptionSheetState extends State<DeliveryOptionSheet> {
+  DeliveryMode selectedMode = DeliveryMode.delivery;
   String? selectedAddressId;
 
   @override
@@ -51,7 +52,15 @@ class _DeliveryOptionSheetState extends State<DeliveryOptionSheet> {
     }
   }
 
-  void confirmDelivery() {
+  void confirm() {
+    if (selectedMode == DeliveryMode.pickup) {
+      Navigator.pop(
+        context,
+        const DeliverySelectionResult(mode: DeliveryMode.pickup),
+      );
+      return;
+    }
+
     final addresses = AddressService.instance.addresses;
     if (addresses.isEmpty) return;
 
@@ -66,21 +75,16 @@ class _DeliveryOptionSheetState extends State<DeliveryOptionSheet> {
     );
   }
 
-  void confirmPickup() {
-    Navigator.pop(
-      context,
-      const DeliverySelectionResult(mode: DeliveryMode.pickup),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final addresses = AddressService.instance.addresses;
+    final canConfirm = selectedMode == DeliveryMode.pickup ||
+        (selectedMode == DeliveryMode.delivery && addresses.isNotEmpty);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
+      initialChildSize: 0.9,
+      minChildSize: 0.6,
+      maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
         return Container(
@@ -123,66 +127,94 @@ class _DeliveryOptionSheetState extends State<DeliveryOptionSheet> {
                 'توفّر المنتجات يعتمد على مكانك',
                 style: TextStyle(color: AppColors.textGray, fontSize: 11.5),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Expanded(
                 child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  controller: scrollController,padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    for (final address in addresses)
-                      _AddressTile(
-                        address: address,
-                        selected: address.id == selectedAddressId,
-                        onTap: () {
-                          setState(() {
-                            selectedAddressId = address.id;
-                          });
-                        },
-                        onDelete: () {
-                          setState(() {
-                            AddressService.instance.removeAddress(address.id);
-                            if (selectedAddressId == address.id) {
-                              selectedAddressId = null;
-                            }
-                          });
-                        },
-                      ),
-                    const SizedBox(height: 8),
-                    _ActionTile(
-                      icon: Icons.add,
-                      label: 'أضف عنوانا جديدا',
-                      onTap: addNewAddress,
+                    // ===== بطاقة توصيل للمنزل =====
+                    _OptionCard(
+                      icon: Icons.local_shipping_outlined,
+                      title: 'توصيل للمنزل',
+                      subtitle: 'يصلك طلبك خلال 30-60 دقيقة',
+                      selected: selectedMode == DeliveryMode.delivery,
+                      onTap: () =>
+                          setState(() => selectedMode = DeliveryMode.delivery),
                     ),
                     const SizedBox(height: 10),
-                    _ActionTile(
+
+                    // ===== بطاقة استلام من الفرع =====
+                    _OptionCard(
                       icon: Icons.storefront_outlined,
-                      label: 'استلم من الصيدلية',
-                      onTap: confirmPickup,
+                      title: 'استلام من الفرع',
+                      subtitle: 'استلمي طلبك من أقرب فرع، بدون رسوم',
+                      selected: selectedMode == DeliveryMode.pickup,
+                      onTap: () =>
+                          setState(() => selectedMode = DeliveryMode.pickup),
                     ),
-                    const SizedBox(height: 16),
-                    if (addresses.isNotEmpty)
-                      SizedBox(
-                        width: double.infinity,
-                        height: 47,
-                        child: ElevatedButton(
-                          onPressed:
-                              selectedAddressId == null ? null : confirmDelivery,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                AppColors.primary.withOpacity(0.4),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            'تأكيد عنوان التوصيل',
-                            style: TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.bold),
+
+                    // ===== عناوين محفوظة (تظهر فقط عند اختيار توصيل) =====
+                    if (selectedMode == DeliveryMode.delivery) ...[
+                      const SizedBox(height: 20),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          'عنوان التوصيل',
+                          style: TextStyle(
+                            color: AppColors.primaryDark,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      for (final address in addresses)
+                        _AddressTile(
+                          address: address,
+                          selected: address.id == selectedAddressId,
+                          onTap: () {
+                            setState(() {
+                              selectedAddressId = address.id;
+                            });
+                          },
+                          onDelete: () {
+                            setState(() {
+                              AddressService.instance.removeAddress(address.id);
+                              if (selectedAddressId == address.id) {
+                                selectedAddressId = null;
+                              }
+                            });
+                          },
+                        ),
+                      _ActionTile(
+                        icon: Icons.add,
+                        label: 'أضف عنوانا جديدا',
+                        onTap: addNewAddress,
+                      ),
+                    ],
+
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 47,
+                      child: ElevatedButton(
+                        onPressed: canConfirm ? confirm : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.green,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                              AppColors.green.withOpacity(0.4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'متابعة',
+                          style:
+                              TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -191,6 +223,73 @@ class _DeliveryOptionSheetState extends State<DeliveryOptionSheet> {
           ),
         );
       },
+    );
+  }
+}
+
+class _OptionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _OptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.green.withOpacity(0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.green : AppColors.border,
+            width: selected ? 1.6 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primaryDark, size: 26),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? AppColors.green : AppColors.border,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -260,8 +359,7 @@ class _AddressTile extends StatelessWidget {
               ),
             ),
             Icon(
-              Icons.location_on_outlined,
-              color: selected ? AppColors.primary : AppColors.textGray,
+              Icons.location_on_outlined,color: selected ? AppColors.primary : AppColors.textGray,
               size: 20,
             ),
           ],

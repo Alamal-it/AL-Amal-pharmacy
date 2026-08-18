@@ -17,17 +17,45 @@ class PaymentMethodScreen extends StatefulWidget {
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   PaymentChoice selected = PaymentChoice.mada;
 
+  // ===== كل خيار دفع له صورة شعار حقيقية (assetPath) + أيقونة احتياطية
+  // (fallbackIcon) لو الصورة مو موجودة بمجلد lib/assets حتى الآن. =====
   final List<_PaymentOption> options = const [
-    _PaymentOption(PaymentChoice.mada, Icons.credit_card, 'مدى'),
-    _PaymentOption(PaymentChoice.card, Icons.credit_card_outlined,
-        'فيزا / ماستركارد'),
-    _PaymentOption(PaymentChoice.applePay, Icons.apple, 'Apple Pay'),
-    _PaymentOption(PaymentChoice.cashOnDelivery, Icons.payments_outlined,
-        'الدفع عند الاستلام'),
-    _PaymentOption(PaymentChoice.tamara, Icons.calendar_month_outlined,
-        'تمارا / تقسيط'),
-    _PaymentOption(PaymentChoice.wallet, Icons.account_balance_wallet_outlined,
-        'المحفظة الداخلية'),
+    _PaymentOption(
+      choice: PaymentChoice.mada,
+      label: 'مدى',
+      assetPath: 'lib/assets/mada_icon.png',
+      fallbackIcon: Icons.credit_card,
+    ),
+    _PaymentOption(
+      choice: PaymentChoice.card,
+      label: 'فيزا / ماستركارد',
+      assetPath: 'lib/assets/visa_mastercard_icon.png',
+      fallbackIcon: Icons.credit_card_outlined,
+    ),
+    _PaymentOption(
+      choice: PaymentChoice.applePay,
+      label: 'Apple Pay',
+      assetPath: 'lib/assets/apple_pay_icon.png',
+      fallbackIcon: Icons.apple,
+    ),
+    _PaymentOption(
+      choice: PaymentChoice.cashOnDelivery,
+      label: 'الدفع عند الاستلام',
+      assetPath: null, // ما فيه شعار بنكي لهذا الخيار، تبقى أيقونة عادية
+      fallbackIcon: Icons.payments_outlined,
+    ),
+    _PaymentOption(
+      choice: PaymentChoice.tamara,
+      label: 'تمارا / تقسيط',
+      assetPath: 'lib/assets/tamara_icon.png',
+      fallbackIcon: Icons.calendar_month_outlined,
+    ),
+    _PaymentOption(
+      choice: PaymentChoice.wallet,
+      label: 'المحفظة الداخلية',
+      assetPath: null,
+      fallbackIcon: Icons.account_balance_wallet_outlined,
+    ),
   ];
 
   @override
@@ -72,7 +100,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(option.icon, color: AppColors.primaryDark, size: 22),
+                  _PaymentLogo(option: option),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -137,10 +165,43 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   }
 }
 
+// ===== ودجت شعار وسيلة الدفع: يحاول يعرض صورة حقيقية، ولو مو موجودة
+// (assetPath فاضي أو الملف غير موجود بعد) يعرض أيقونة عادية بدلها. =====
+class _PaymentLogo extends StatelessWidget {
+  final _PaymentOption option;
+
+  const _PaymentLogo({required this.option});
+
+  @override
+  Widget build(BuildContext context) {
+    if (option.assetPath == null) {
+      return Icon(option.fallbackIcon, color: AppColors.primaryDark, size: 22);
+    }
+
+    return Image.asset(
+      option.assetPath!,
+      width: 28,
+      height: 28,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => Icon(
+        option.fallbackIcon,
+        color: AppColors.primaryDark,
+        size: 22,
+      ),
+    );
+  }
+}
+
 class _PaymentOption {
   final PaymentChoice choice;
-  final IconData icon;
   final String label;
+  final String? assetPath;
+  final IconData fallbackIcon;
 
-  const _PaymentOption(this.choice, this.icon, this.label);
+  const _PaymentOption({
+    required this.choice,
+    required this.label,
+    required this.assetPath,
+    required this.fallbackIcon,
+  });
 }

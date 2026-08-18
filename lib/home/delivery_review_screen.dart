@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../models/delivery_address.dart';
+import '../widgets/checkout_stepper.dart';
 import 'payment_method_screen.dart';
 
 class DeliveryReviewScreen extends StatefulWidget {
@@ -53,7 +54,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ===== شريط التقدم =====
-            _buildStepper(),
+            const CheckoutStepper(currentStep: 0),
             const SizedBox(height: 26),
 
             // ===== خيار "لشخص آخر" =====
@@ -117,10 +118,10 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.green, width: 1.4),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Icon(Icons.delete_outline,
                           color: AppColors.textGray, size: 20),
@@ -233,42 +234,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepper() {
-    return Row(
-      children: [_stepCircle(icon: Icons.check, active: true, done: true),
-        _stepLine(active: true),
-        _stepCircle(icon: Icons.credit_card, active: false, done: false),
-        _stepLine(active: false),
-        _stepCircle(
-            icon: Icons.local_shipping_outlined, active: false, done: false),
-      ],
-    );
-  }
-
-  Widget _stepCircle(
-      {required IconData icon, required bool active, required bool done}) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: active ? AppColors.primaryDark : AppColors.border,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: Colors.white, size: 18),
-    );
-  }
-
-  Widget _stepLine({required bool active}) {
-    return Expanded(
-      child: Container(
-        height: 2,
-        color: active ? AppColors.primaryDark : AppColors.border,
+          ],),
       ),
     );
   }

@@ -8,7 +8,18 @@ enum PaymentChoice { mada, card, applePay, cashOnDelivery, tamara, wallet }
 class PaymentMethodScreen extends StatefulWidget {
   final double totalAmount;
 
-  const PaymentMethodScreen({super.key, required this.totalAmount});
+  // ===== معلومات إضافية لتمريرها لشاشة تأكيد الطلب النهائية =====
+  final bool isPickup;
+  final String? addressLine;
+  final String? timeSlot;
+
+  const PaymentMethodScreen({
+    super.key,
+    required this.totalAmount,
+    this.isPickup = true,
+    this.addressLine,
+    this.timeSlot,
+  });
 
   @override
   State<PaymentMethodScreen> createState() => _PaymentMethodScreenState();
@@ -139,6 +150,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   MaterialPageRoute(
                     builder: (_) => OrderConfirmationScreen(
                       totalAmount: widget.totalAmount,
+                      isPickup: widget.isPickup,
+                      addressLine: widget.addressLine,
+                      timeSlot: widget.timeSlot,
                     ),
                   ),
                 );

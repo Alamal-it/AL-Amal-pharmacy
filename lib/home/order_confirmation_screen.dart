@@ -6,8 +6,17 @@ import '../main_nav/main_nav_screen.dart';
 
 class OrderConfirmationScreen extends StatefulWidget {
   final double totalAmount;
+  final bool isPickup;
+  final String? addressLine;
+  final String? timeSlot;
 
-  const OrderConfirmationScreen({super.key, required this.totalAmount});
+  const OrderConfirmationScreen({
+    super.key,
+    required this.totalAmount,
+    this.isPickup = true,
+    this.addressLine,
+    this.timeSlot,
+  });
 
   @override
   State<OrderConfirmationScreen> createState() =>
@@ -48,10 +57,12 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                       color: Colors.white, size: 42),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'تم استلام طلبك بنجاح',
+                Text(
+                  widget.isPickup
+                      ? 'تم استلام طلبك بنجاح'
+                      : 'تم تأكيد طلبك بنجاح',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primaryDark,
@@ -121,15 +132,16 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(backgroundColor: AppColors.white,
+    return Scaffold(
+      backgroundColor: AppColors.white,
       appBar: AppBar(
         backgroundColor: AppColors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
         centerTitle: true,
-        title: const Text(
-          'استلام الطلب',
-          style: TextStyle(
+        title: Text(
+          widget.isPickup ? 'استلام الطلب' : 'تتبع التوصيل',
+          style: const TextStyle(
             color: AppColors.primaryDark,
             fontWeight: FontWeight.w700,
             fontSize: 16,
@@ -145,8 +157,6 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
               child: const CheckoutStepper(currentStep: 2),
             ),
             const SizedBox(height: 10),
-
-            // ===== "خريطة" رمزية توضيحية =====
             Container(
               height: 190,
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -155,37 +165,39 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               alignment: Alignment.center,
-              child: Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: AppColors.green.withOpacity(0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Container(
-                    width: 22,
-                    height: 22,
-                    decoration: const BoxDecoration(
-                      color: AppColors.green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
+              child: widget.isPickup
+                  ? Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: AppColors.green.withOpacity(0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            color: AppColors.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.local_shipping_outlined,
+                      size: 46, color: AppColors.primary),
             ),
-
             const SizedBox(height: 18),
-
-            // ===== حالة الطلب =====
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    '01:30 ص - 01:20 ص',
-                    style: TextStyle(
+                  Text(
+                    widget.isPickup
+                        ? '01:30 ص - 01:20 ص'
+                        : (widget.timeSlot ?? 'خلال 60-90 دقيقة'),
+                    style: const TextStyle(
                       color: AppColors.primaryDark,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -198,9 +210,9 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                       color: AppColors.green.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'جاهز للاستلام',
-                      style: TextStyle(
+                    child: Text(
+                      widget.isPickup ? 'جاهز للاستلام' : 'قيد التجهيز',
+                      style: const TextStyle(
                         color: AppColors.green,
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
@@ -210,10 +222,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 14),
-
-            // ===== شريط تقدم بسيط لحالة التحضير =====
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -225,22 +234,21 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                   _dot(active: false),
                 ],
               ),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+            ),const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'الصيدلية بتجهز طلبك الحين',
+                widget.isPickup
+                    ? 'الصيدلية بتجهز طلبك الحين'
+                    : 'طلبك قيد التجهيز، وسيتم التواصل معك لتوصيله',
                 textAlign: TextAlign.right,
-                style: TextStyle(color: AppColors.textGray, fontSize: 12),
+                style: const TextStyle(color: AppColors.textGray, fontSize: 12),
               ),
             ),
-
             const SizedBox(height: 20),
             const Divider(color: AppColors.border),
-
-            // ===== رقم الطلب =====
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -252,17 +260,16 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Text(
-                    'شارك الرقم مع الموظف',
-                    style: TextStyle(color: AppColors.textGray, fontSize: 12),
+                  Text(
+                    widget.isPickup
+                        ? 'شارك الرقم مع الموظف'
+                        : 'احتفظي برقم الطلب للمتابعة',
+                    style: const TextStyle(color: AppColors.textGray, fontSize: 12),
                   ),
                 ],
               ),
             ),
-
             const Divider(color: AppColors.border),
-
-            // ===== بطاقة معلومات الفرع =====
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
@@ -274,26 +281,35 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                       color: AppColors.green.withOpacity(0.14),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.storefront_outlined,
-                        size: 18, color: AppColors.green),
+                    child: Icon(
+                      widget.isPickup
+                          ? Icons.storefront_outlined
+                          : Icons.location_on_outlined,
+                      size: 18,
+                      color: AppColors.green,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
-                      children: const [
+                      children: [
                         Text(
-                          'صيدلية الأمل — الفرع الأقرب',
-                          style: TextStyle(
+                          widget.isPickup
+                              ? 'صيدلية الأمل — الفرع الأقرب'
+                              : 'التوصيل إلى عنوانك',
+                          style: const TextStyle(
                             color: AppColors.primaryDark,
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'مفتوح حتى 12:00 ص',
-                          style: TextStyle(
+                          widget.isPickup
+                              ? 'مفتوح حتى 12:00 ص'
+                              : (widget.addressLine ?? 'العنوان المحدد'),
+                          style: const TextStyle(
                               color: AppColors.textGray, fontSize: 11.5),
                         ),
                       ],
@@ -302,26 +318,24 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                 ],
               ),
             ),
-
-            const SizedBox(height: 6),
-            TextButton.icon(
-              onPressed: () {
-                // TODO: فتح تطبيق الخرائط بموقع الفرع لما يجهز رابط حقيقي.
-              },
-              icon: const Icon(Icons.directions_outlined,
-                  color: AppColors.primary, size: 18),
-              label: const Text(
-                'احصل على الاتجاهات',
-                style: TextStyle(
-                    color: AppColors.primary, fontWeight: FontWeight.w600),
+            if (widget.isPickup) ...[
+              const SizedBox(height: 6),
+              TextButton.icon(
+                onPressed: () {
+                  // TODO: فتح تطبيق الخرائط بموقع الفرع لما يجهز رابط حقيقي.
+                },
+                icon: const Icon(Icons.directions_outlined,
+                    color: AppColors.primary, size: 18),
+                label: const Text(
+                  'احصل على الاتجاهات',
+                  style: TextStyle(
+                      color: AppColors.primary, fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-
+            ],
             const SizedBox(height: 10),
             const Divider(color: AppColors.border),
-            const SizedBox(height: 16),
-
-            Padding(
+            const SizedBox(height: 16),Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -345,22 +359,22 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.all(16),
               child: SizedBox(
                 height: 50,
-                child: ElevatedButton(onPressed: finishOrder,
+                child: ElevatedButton(
+                  onPressed: finishOrder,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.green,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'استلمت طلبك الحين',
-                    style: TextStyle(
+                  child: Text(
+                    widget.isPickup ? ' استلم طلبك الحين' : 'تم، متابعة',
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

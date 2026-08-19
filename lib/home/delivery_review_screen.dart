@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../models/delivery_address.dart';
 import '../widgets/checkout_stepper.dart';
-import 'payment_method_screen.dart';
+import 'delivery_schedule_screen.dart';
 
 class DeliveryReviewScreen extends StatefulWidget {
   final DeliveryAddress address;
@@ -209,11 +209,13 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
               height: 48,
               child: ElevatedButton(
                 onPressed: () {
+                  // بدّلناها من الذهاب المباشر للدفع، لجدولة موعد التوصيل أول.
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => PaymentMethodScreen(
+                      builder: (_) => DeliveryScheduleScreen(
                         totalAmount: widget.totalAmount,
+                        address: widget.address,
                       ),
                     ),
                   );

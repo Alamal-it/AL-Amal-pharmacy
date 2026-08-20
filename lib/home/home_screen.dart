@@ -10,7 +10,7 @@ import '../auth/login_screen.dart';
 import '../widgets/delivery_option_sheet.dart';
 import '../models/delivery_address.dart';
 import 'categories_screen.dart';
-
+import 'favorites_screen.dart';
 class HomeScreen extends StatefulWidget {
   final bool isGuest;
 
@@ -277,13 +277,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () {
-                            // TODO: فتح شاشة قائمة الأمنيات لما تجهز.
-                          },
-                          icon: const Icon(Icons.favorite_border,
-                              color: AppColors.primaryDark),
-                        ),
+                      IconButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+    );
+  },
+  icon: const Icon(Icons.favorite_border,
+      color: AppColors.primaryDark),
+),
                       ],
                     ),
 

@@ -87,6 +87,8 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
           addressLine:
               '${widget.address.addressLine}, ${widget.address.city}',
           timeSlot: selectedSlot.label,
+          destinationLat: widget.address.latitude,
+          destinationLng: widget.address.longitude,
         ),
       ),
     );

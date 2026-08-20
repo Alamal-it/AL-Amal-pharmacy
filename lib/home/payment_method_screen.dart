@@ -12,6 +12,8 @@ class PaymentMethodScreen extends StatefulWidget {
   final bool isPickup;
   final String? addressLine;
   final String? timeSlot;
+  final double? destinationLat;
+  final double? destinationLng;
 
   const PaymentMethodScreen({
     super.key,
@@ -19,6 +21,8 @@ class PaymentMethodScreen extends StatefulWidget {
     this.isPickup = true,
     this.addressLine,
     this.timeSlot,
+    this.destinationLat,
+    this.destinationLng,
   });
 
   @override
@@ -153,6 +157,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                       isPickup: widget.isPickup,
                       addressLine: widget.addressLine,
                       timeSlot: widget.timeSlot,
+                      destinationLat: widget.destinationLat,
+                      destinationLng: widget.destinationLng,
                     ),
                   ),
                 );

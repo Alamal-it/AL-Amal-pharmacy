@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../models/product.dart';
+import '../services/favorites_service.dart';
 import '../services/cart_service.dart';
+
 class ProductDetailsScreen extends StatefulWidget {
   final Product product;
 
@@ -42,10 +44,18 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   ),
                   IconButton(
                     onPressed: () {
-                      // TODO: إضافة/إزالة من المفضلة لما تجهز.
+                      setState(() {
+                        FavoritesService.instance.toggleFavorite(product);
+                      });
                     },
-                    icon: const Icon(Icons.favorite_border,
-                        color: AppColors.primaryDark),
+                    icon: Icon(
+                      FavoritesService.instance.isFavorite(product.id)
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: FavoritesService.instance.isFavorite(product.id)
+                          ? Colors.red
+                          : AppColors.primaryDark,
+                    ),
                   ),
                 ],
               ),
@@ -90,8 +100,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                 '-$discountPercent%',
                                 style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold),
+                                    fontSize: 12,fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -102,7 +111,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [// ===== الفئة =====
+                        children: [
+                          // ===== الفئة =====
                           Text(
                             product.category,
                             style: const TextStyle(
@@ -183,8 +193,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'الكمية',
-                                style: TextStyle(
+                                'الكمية',style: TextStyle(
                                   color: AppColors.primaryDark,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -237,16 +246,18 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
-                onPressed: () {
-  CartService.instance.addToCart(product, quantity: quantity);
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content:
-          Text('تمت إضافة $quantity × ${product.name} للسلة'),
-      backgroundColor: AppColors.primary,
-    ),
-  );
-},
+                  onPressed: () {
+                    // ===== إضافة المنتج فعليًا لسلة التسوق =====
+                    CartService.instance.addToCart(product, quantity: quantity);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content:
+                            Text('تمت إضافة $quantity × ${product.name} للسلة'),
+                        backgroundColor: AppColors.primary,
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.shopping_cart_outlined,
                       color: Colors.white),
                   label: const Text(

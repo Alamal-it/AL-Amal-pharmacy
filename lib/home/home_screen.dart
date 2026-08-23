@@ -11,6 +11,7 @@ import '../widgets/delivery_option_sheet.dart';
 import '../models/delivery_address.dart';
 import 'categories_screen.dart';
 import 'favorites_screen.dart';
+import 'upload_prescription_screen.dart';
 class HomeScreen extends StatefulWidget {
   final bool isGuest;
 
@@ -324,7 +325,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: Icons.camera_alt_outlined,
                             label: 'رفع وصفة',
                             onTap: () {
-                              // TODO: فتح شاشة رفع الوصفة الطبية لما تجهز.
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const UploadPrescriptionScreen(),
+                                ),
+                              );
                             },
                           ),
                         ],

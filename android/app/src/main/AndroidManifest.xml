@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="pharmacy_alamal"
         android:name="${applicationName}"
@@ -37,11 +37,14 @@
 
     </application>
 
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT" />
-            <data android:mimeType="text/plain" />
-        </intent>
-    </queries>
+  <queries>
+    <intent>
+        <action android:name="android.media.action.IMAGE_CAPTURE" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.GET_CONTENT" />
+        <data android:mimeType="image/*" />
+    </intent>
+</queries>
 
 </manifest>

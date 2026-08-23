@@ -4,7 +4,7 @@ import '../home/home_screen.dart';
 import '../home/categories_screen.dart';
 import '../home/cart_screen.dart';
 import '../services/cart_service.dart';
-
+import '../home/offers_screen.dart';
 class MainNavScreen extends StatefulWidget {
   final bool isGuest;
 
@@ -41,24 +41,26 @@ class _MainNavScreenState extends State<MainNavScreen> {
     if (mounted) setState(() {});
   }
 
-  Widget bodyForIndex(int index) {
-    switch (index) {
-      case 2:
-        return HomeScreen(isGuest: widget.isGuest);
-      case 3:
-        return const CategoriesScreen();
-      case 1:
-        return const CartScreen();
-      default:
-        // TODO: استبدال هذا بالشاشة الفعلية (عروض، حسابي) لما نبنيها.
-        return Center(
-          child: Text(
-            '${items[index].label} — قريباً',
-            style: const TextStyle(color: AppColors.textGray),
-          ),
-        );
-    }
+Widget bodyForIndex(int index) {
+  switch (index) {
+    case 2:
+      return HomeScreen(isGuest: widget.isGuest);
+    case 3:
+      return const CategoriesScreen();
+    case 1:
+      return const CartScreen();
+    case 4:
+      return const OffersScreen();
+    default:
+      // TODO: استبدال هذا بالشاشة الفعلية (حسابي) لما نبنيها.
+      return Center(
+        child: Text(
+          '${items[index].label} — قريباً',
+          style: const TextStyle(color: AppColors.textGray),
+        ),
+      );
   }
+}
 
   @override
   Widget build(BuildContext context) {

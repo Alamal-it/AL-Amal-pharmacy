@@ -5,6 +5,7 @@ import '../home/categories_screen.dart';
 import '../home/cart_screen.dart';
 import '../services/cart_service.dart';
 import '../home/offers_screen.dart';
+import '../home/profile_screen.dart';
 class MainNavScreen extends StatefulWidget {
   final bool isGuest;
 
@@ -43,6 +44,8 @@ class _MainNavScreenState extends State<MainNavScreen> {
 
 Widget bodyForIndex(int index) {
   switch (index) {
+    case 0:
+      return const ProfileScreen();
     case 2:
       return HomeScreen(isGuest: widget.isGuest);
     case 3:

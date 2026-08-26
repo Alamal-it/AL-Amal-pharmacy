@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../core/app_colors.dart';
-import '../core/app_strings.dart';
 import '../models/product.dart';
 import '../services/product_service.dart';
 import '../widgets/promo_banner_carousel.dart';
@@ -42,6 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
   DeliveryMode? deliveryMode;
   DeliveryAddress? selectedAddress;
 
+  // ============================================================
+  // البانرات
+  // ============================================================
+
   final List<PromoBanner> banners = const [
     PromoBanner(
       title: 'خصم 20%',
@@ -59,10 +62,23 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
+  // ============================================================
+  // بداية الصفحة
+  // ============================================================
+
   @override
   void initState() {
     super.initState();
+
     productsFuture = productService.getProducts();
+
+    searchController.addListener(() {
+      if (!mounted) return;
+
+      setState(() {
+        searchQuery = searchController.text.trim();
+      });
+    });
   }
 
   @override
@@ -71,11 +87,19 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // ============================================================
+  // تحديث المنتجات
+  // ============================================================
+
   Future<void> refreshProducts() async {
     setState(() {
       productsFuture = productService.getProducts();
     });
   }
+
+  // ============================================================
+  // تسجيل الدخول
+  // ============================================================
 
   void goToLogin() {
     Navigator.pushAndRemoveUntil(
@@ -86,6 +110,10 @@ class _HomeScreenState extends State<HomeScreen> {
       (route) => false,
     );
   }
+
+  // ============================================================
+  // خيارات التوصيل
+  // ============================================================
 
   Future<void> openDeliveryOptions() async {
     final result = await DeliveryOptionSheet.show(context);
@@ -98,6 +126,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ============================================================
+  // فتح صفحة الفئات
+  // ============================================================
+
   void goToCategories() {
     Navigator.push(
       context,
@@ -107,30 +139,150 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============================================================
+  // فتح فئة معينة
+  // ============================================================
+
   void goToCategory(String categoryName) {
+    String actualCategory;
+
+    switch (categoryName) {
+      case 'أجهزة طبية':
+        actualCategory = 'اجهزة طبية';
+        break;
+
+      case 'الأطفال':
+        actualCategory = 'الأم والطفل';
+        break;
+
+      case 'العناية بالبشرة':
+        actualCategory = 'عناية بالبشرة';
+        break;
+
+      case 'الأدوية':
+        actualCategory = 'أدوية';
+        break;
+
+      case 'الفيتامينات':
+        actualCategory = 'الفيتامينات';
+        break;
+
+      case 'العناية بالشعر':
+        actualCategory = 'عناية بالشعر';
+        break;
+
+      case 'العطور':
+        actualCategory = 'العطور';
+        break;
+
+      case 'عناية باليدين':
+        actualCategory = 'عناية باليدين';
+        break;
+
+      case 'الجمال':
+        actualCategory = 'الجمال';
+        break;
+
+      case 'العناية بالمنزل':
+        actualCategory = 'العناية بالمنزل';
+        break;
+
+      case 'العناية اليومية':
+        actualCategory = 'العناية اليومية';
+        break;
+
+      case 'العناية الصحية':
+        actualCategory = 'العناية الصحية';
+        break;
+
+      case 'التغذية الرياضية':
+        actualCategory = 'التغذية الرياضية';
+        break;
+
+      default:
+        actualCategory = categoryName;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => CategoryProductsScreen(
-          categoryName: categoryName,
+          categoryName: actualCategory,
         ),
       ),
     );
   }
 
+  // ============================================================
+  // البحث في المنتجات
+  // ============================================================
+
+  List<Product> filterProducts(List<Product> allProducts) {
+    if (searchQuery.isEmpty) {
+      return allProducts;
+    }
+
+    final query = normalizeArabic(searchQuery);
+
+    return allProducts.where((product) {
+      final productName =
+          normalizeArabic(product.name);
+
+      final category =
+          normalizeArabic(product.category);
+
+      return productName.contains(query) ||
+          category.contains(query);
+    }).toList();
+  }
+
+  // ============================================================
+  // توحيد الحروف العربية للبحث
+  // ============================================================
+
+  String normalizeArabic(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll('أ', 'ا')
+        .replaceAll('إ', 'ا')
+        .replaceAll('آ', 'ا')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي')
+        .replaceAll('ؤ', 'و')
+        .replaceAll('ئ', 'ي')
+        .replaceAll('ـ', '')
+        .trim();
+  }
+
+  // ============================================================
+  // مسح البحث
+  // ============================================================
+
+  void clearSearch() {
+    searchController.clear();
+
+    setState(() {
+      searchQuery = '';
+    });
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
-    final isArabic = Directionality.of(context) ==
-        TextDirection.rtl;
-
     return Directionality(
-      textDirection:
-          isArabic ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: TextDirection.rtl,
       child: SafeArea(
         child: RefreshIndicator(
           onRefresh: refreshProducts,
           child: CustomScrollView(
             slivers: [
+              // ==================================================
+              // الجزء العلوي
+              // ==================================================
+
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
                   16,
@@ -143,9 +295,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
                     children: [
-                      // ================================
+                      // ==================================================
                       // الموقع + تسجيل الدخول
-                      // ================================
+                      // ==================================================
 
                       Row(
                         children: [
@@ -164,17 +316,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                     shape:
                                         RoundedRectangleBorder(
                                       borderRadius:
-                                          BorderRadius.circular(20),
+                                          BorderRadius.circular(
+                                              20),
                                     ),
                                     minimumSize: Size.zero,
                                     tapTargetSize:
                                         MaterialTapTargetSize
                                             .shrinkWrap,
                                   ),
-                                  child: Text(
-                                    AppStrings.loginRegister,
-                                    style: const TextStyle(
-                                      color: AppColors.green,
+                                  child: const Text(
+                                    'تسجيل الدخول / إنشاء حساب',
+                                    style: TextStyle(
+                                      color:
+                                          AppColors.green,
                                       fontSize: 12,
                                       fontWeight:
                                           FontWeight.w700,
@@ -184,9 +338,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               : IconButton(
                                   onPressed: () {},
                                   icon: const Icon(
-                                    Icons.notifications_none,
-                                    color:
-                                        AppColors.primaryDark,
+                                    Icons
+                                        .notifications_none,
+                                    color: AppColors
+                                        .primaryDark,
                                   ),
                                 ),
 
@@ -209,13 +364,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                           deliveryMode ==
                                                   DeliveryMode
                                                       .pickup
-                                              ? AppStrings
-                                                  .pickupFromPharmacy
+                                              ? 'الاستلام من الصيدلية'
                                               : selectedAddress !=
                                                       null
-                                                  ? '${AppStrings.deliveryTo} ${selectedAddress!.label}'
-                                                  : AppStrings
-                                                      .deliveryToHome,
+                                                  ? 'التوصيل إلى ${selectedAddress!.label}'
+                                                  : 'التوصيل إلى المنزل',
                                           style:
                                               const TextStyle(
                                             color: AppColors
@@ -225,10 +378,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 FontWeight.w700,
                                           ),
                                           overflow:
-                                              TextOverflow.ellipsis,
+                                              TextOverflow
+                                                  .ellipsis,
                                         ),
                                       ),
-                                      const SizedBox(width: 4),
+                                      const SizedBox(
+                                          width: 4),
                                       const Icon(
                                         Icons
                                             .keyboard_arrow_down,
@@ -242,15 +397,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Text(
                                     deliveryMode ==
                                             DeliveryMode.pickup
-                                        ? AppStrings
-                                            .chooseNearestPharmacy
-                                        : selectedAddress != null
+                                        ? 'اختاري أقرب صيدلية'
+                                        : selectedAddress !=
+                                                null
                                             ? '${selectedAddress!.addressLine}, ${selectedAddress!.city}'
-                                            : AppStrings
-                                                .defaultAddress,
-                                    style: const TextStyle(
-                                      color:
-                                          AppColors.textGray,
+                                            : 'العنوان الافتراضي',
+                                    style:
+                                        const TextStyle(
+                                      color: AppColors
+                                          .textGray,
                                       fontSize: 10,
                                     ),
                                     maxLines: 1,
@@ -266,12 +421,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: 10),
 
-                      // ================================
+                      // ==================================================
                       // البحث
-                      // ================================
+                      // ==================================================
 
                       Row(
                         children: [
+                          // زر الفئات
                           InkWell(
                             onTap: goToCategories,
                             borderRadius:
@@ -280,13 +436,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               width: 42,
                               height: 42,
                               decoration: BoxDecoration(
-                                color: AppColors.green,
+                                color:
+                                    AppColors.green,
                                 borderRadius:
-                                    BorderRadius.circular(10),
+                                    BorderRadius.circular(
+                                        10),
                               ),
-                              alignment: Alignment.center,
+                              alignment:
+                                  Alignment.center,
                               child: const Icon(
-                                Icons.grid_view_rounded,
+                                Icons
+                                    .grid_view_rounded,
                                 color: Colors.white,
                                 size: 22,
                               ),
@@ -295,56 +455,60 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(width: 12),
 
+                          // مربع البحث
                           Expanded(
                             child: Container(
                               height: 42,
                               padding:
-                                  const EdgeInsets.symmetric(
+                                  const EdgeInsets
+                                      .symmetric(
                                 horizontal: 12,
                               ),
-                              decoration: BoxDecoration(
-                                color: AppColors.white,
+                              decoration:
+                                  BoxDecoration(
+                                color:
+                                    AppColors.white,
                                 borderRadius:
-                                    BorderRadius.circular(10),
+                                    BorderRadius.circular(
+                                        10),
                                 border: Border.all(
-                                  color: AppColors.border,
+                                  color:
+                                      AppColors.border,
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   const Icon(
                                     Icons.search,
-                                    color:
-                                        AppColors.textGray,
+                                    color: AppColors
+                                        .textGray,
                                     size: 20,
                                   ),
 
-                                  const SizedBox(width: 8),
+                                  const SizedBox(
+                                      width: 8),
 
                                   Expanded(
                                     child: TextField(
                                       controller:
                                           searchController,
-                                      textAlign: isArabic
-                                          ? TextAlign.right
-                                          : TextAlign.left,
+                                      textAlign:
+                                          TextAlign.right,
+                                      textDirection:
+                                          TextDirection.rtl,
                                       textInputAction:
-                                          TextInputAction.search,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          searchQuery =
-                                              value.trim();
-                                        });
-                                      },
+                                          TextInputAction
+                                              .search,
                                       decoration:
-                                          InputDecoration(
+                                          const InputDecoration(
                                         isCollapsed: true,
                                         border:
-                                            InputBorder.none,
-                                        hintText: AppStrings
-                                            .searchProductsHint,
+                                            InputBorder
+                                                .none,
+                                        hintText:
+                                            'ابحثي عن منتج أو دواء',
                                         hintStyle:
-                                            const TextStyle(
+                                            TextStyle(
                                           color: AppColors
                                               .textGray,
                                           fontSize: 12,
@@ -361,14 +525,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                   if (searchQuery.isNotEmpty)
                                     GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          searchController
-                                              .clear();
-                                          searchQuery = '';
-                                        });
-                                      },
-                                      child: const Icon(
+                                      onTap:
+                                          clearSearch,
+                                      child:
+                                          const Icon(
                                         Icons.close,
                                         color: AppColors
                                             .textGray,
@@ -382,6 +542,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(width: 8),
 
+                          // المفضلة
                           IconButton(
                             onPressed: () {
                               Navigator.push(
@@ -394,8 +555,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                             icon: const Icon(
                               Icons.favorite_border,
-                              color:
-                                  AppColors.primaryDark,
+                              color: AppColors
+                                  .primaryDark,
                             ),
                           ),
                         ],
@@ -403,9 +564,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: 14),
 
-                      // ================================
-                      // البانر
-                      // ================================
+                      // ==================================================
+                      // إذا ما فيه بحث
+                      // ==================================================
 
                       if (searchQuery.isEmpty) ...[
                         PromoBannerCarousel(
@@ -415,18 +576,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(height: 18),
 
-                        // ==============================
+                        // ==================================================
                         // الاختصارات
-                        // ==============================
+                        // ==================================================
 
                         Row(
                           mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                              MainAxisAlignment
+                                  .spaceBetween,
                           children: [
                             CategoryIconItem(
                               icon: Icons
                                   .receipt_long_outlined,
-                              label: AppStrings.myOrders,
+                              label: 'طلباتي',
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -439,34 +601,29 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
 
                             CategoryIconItem(
-                              icon:
-                                  Icons.favorite_border,
-                              label:
-                                  AppStrings.healthCare,
+                              icon: Icons
+                                  .favorite_border,
+                              label: 'العناية الصحية',
                               onTap: () {
                                 goToCategory(
-                                  AppStrings.healthCare,
-                                );
+                                    'العناية الصحية');
                               },
                             ),
 
                             CategoryIconItem(
                               icon: Icons
                                   .medical_services_outlined,
-                              label:
-                                  AppStrings.medicalDevices,
+                              label: 'أجهزة طبية',
                               onTap: () {
                                 goToCategory(
-                                  'اجهزة طبية',
-                                );
+                                    'أجهزة طبية');
                               },
                             ),
 
                             CategoryIconItem(
-                              icon:
-                                  Icons.camera_alt_outlined,
-                              label:
-                                  _uploadPrescriptionText(),
+                              icon: Icons
+                                  .camera_alt_outlined,
+                              label: 'رفع وصفة',
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -482,34 +639,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(height: 20),
 
-                        // ==============================
+                        // ==================================================
                         // تسوق حسب الفئة
-                        // ==============================
+                        // ==================================================
 
                         Row(
                           mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                              MainAxisAlignment
+                                  .spaceBetween,
                           children: [
-                            Text(
-                              _shopByCategoryText(),
-                              style: const TextStyle(
-                                color:
-                                    AppColors.primaryDark,
+                            const Text(
+                              'تسوقي حسب الفئة',
+                              style: TextStyle(
+                                color: AppColors
+                                    .primaryDark,
                                 fontSize: 14,
                                 fontWeight:
                                     FontWeight.w700,
                               ),
                             ),
-
                             TextButton(
                               onPressed:
                                   goToCategories,
-                              child: Text(
-                                AppStrings.seeAll,
-                                style:
-                                    const TextStyle(
-                                  color:
-                                      AppColors.primary,
+                              child: const Text(
+                                'عرض الكل',
+                                style: TextStyle(
+                                  color: AppColors
+                                      .primary,
                                   fontSize: 11.5,
                                 ),
                               ),
@@ -519,93 +675,123 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(height: 10),
 
+                        // ==================================================
+                        // الفئات
+                        // ==================================================
+
                         Row(
                           mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                              MainAxisAlignment
+                                  .spaceBetween,
                           children: [
                             CategoryIconItem(
-                              icon:
-                                  Icons.child_care_outlined,
-                              label:
-                                  AppStrings.children,
-                              onTap: () {},
+                              icon: Icons
+                                  .child_care_outlined,
+                              label: 'الأطفال',
+                              onTap: () {
+                                goToCategory(
+                                    'الأطفال');
+                              },
                             ),
+
                             CategoryIconItem(
-                              icon:
-                                  Icons.water_drop_outlined,
-                              label:
-                                  AppStrings.skin,
-                              onTap: () {},
+                              icon: Icons
+                                  .water_drop_outlined,
+                              label: 'العناية بالبشرة',
+                              onTap: () {
+                                goToCategory(
+                                    'العناية بالبشرة');
+                              },
                             ),
+
                             CategoryIconItem(
-                              icon:
-                                  Icons.add_circle_outline,
-                              label:
-                                  AppStrings.vitamins,
-                              onTap: () {},
+                              icon: Icons
+                                  .add_circle_outline,
+                              label: 'الفيتامينات',
+                              onTap: () {
+                                goToCategory(
+                                    'الفيتامينات');
+                              },
                             ),
+
                             CategoryIconItem(
-                              icon:
-                                  Icons.medication_outlined,
-                              label:
-                                  AppStrings.medicines,
-                              onTap: () {},
+                              icon: Icons
+                                  .medication_outlined,
+                              label: 'الأدوية',
+                              onTap: () {
+                                goToCategory(
+                                    'الأدوية');
+                              },
                             ),
                           ],
                         ),
 
                         const SizedBox(height: 22),
                       ],
-
-                      // ================================
-                      // العروض / نتائج البحث
-                      // ================================
-
-                      Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            searchQuery.isEmpty
-                                ? AppStrings.expiringOffers
-                                : AppStrings.searchResults,
-                            style: const TextStyle(
-                              color:
-                                  AppColors.primaryDark,
-                              fontSize: 14,
-                              fontWeight:
-                                  FontWeight.w700,
-                            ),
-                          ),
-
-                          if (searchQuery.isEmpty)
-                            const CountdownTimer(
-                              duration: Duration(
-                                hours: 2,
-                                minutes: 14,
-                                seconds: 9,
-                              ),
-                            ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 10),
                     ],
                   ),
                 ),
               ),
 
-              // ==========================================
-              // المنتجات
-              // ==========================================
+              // ==========================================================
+              // عنوان النتائج
+              // ==========================================================
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                  ),
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        searchQuery.isEmpty
+                            ? 'العروض التي تنتهي قريبًا'
+                            : 'نتائج البحث',
+                        style: const TextStyle(
+                          color:
+                              AppColors.primaryDark,
+                          fontSize: 14,
+                          fontWeight:
+                              FontWeight.w700,
+                        ),
+                      ),
+
+                      if (searchQuery.isEmpty)
+                        const CountdownTimer(
+                          duration: Duration(
+                            hours: 2,
+                            minutes: 14,
+                            seconds: 9,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 10),
+              ),
+
+              // ==========================================================
+              // المنتجات / نتائج البحث
+              // ==========================================================
 
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 150,
-                  child: FutureBuilder<List<Product>>(
+                  height: 190,
+                  child:
+                      FutureBuilder<List<Product>>(
                     future: productsFuture,
                     builder:
                         (context, snapshot) {
+                      // -----------------------------
+                      // تحميل
+                      // -----------------------------
+
                       if (snapshot.connectionState ==
                           ConnectionState.waiting) {
                         return const Center(
@@ -617,32 +803,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       }
 
-                      final allProducts =
-                          snapshot.data ?? [];
+                      // -----------------------------
+                      // خطأ
+                      // -----------------------------
 
-                      final products =
-                          searchQuery.isEmpty
-                              ? allProducts
-                              : allProducts
-                                  .where(
-                                    (p) => p.name
-                                        .toLowerCase()
-                                        .contains(
-                                          searchQuery
-                                              .toLowerCase(),
-                                        ),
-                                  )
-                                  .toList();
-
-                      if (products.isEmpty) {
-                        return Center(
+                      if (snapshot.hasError) {
+                        return const Center(
                           child: Text(
-                            searchQuery.isEmpty
-                                ? AppStrings
-                                    .noOffersCurrently
-                                : AppStrings.noProductsFound,
-                            style:
-                                const TextStyle(
+                            'حدث خطأ أثناء تحميل المنتجات',
+                            style: TextStyle(
                               color:
                                   AppColors.textGray,
                             ),
@@ -650,11 +819,67 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       }
 
+                      // -----------------------------
+                      // كل المنتجات
+                      // -----------------------------
+
+                      final allProducts =
+                          snapshot.data ?? [];
+
+                      // -----------------------------
+                      // فلترة البحث
+                      // -----------------------------
+
+                      final products =
+                          filterProducts(
+                              allProducts);
+
+                      // -----------------------------
+                      // لا توجد نتائج
+                      // -----------------------------
+
+                      if (products.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment:
+                                MainAxisAlignment
+                                    .center,
+                            children: [
+                              const Icon(
+                                Icons
+                                    .search_off_rounded,
+                                size: 40,
+                                color: AppColors
+                                    .textGray,
+                              ),
+                              const SizedBox(
+                                  height: 8),
+                              Text(
+                                searchQuery.isEmpty
+                                    ? 'لا توجد عروض حاليًا'
+                                    : 'لم يتم العثور على منتجات',
+                                style:
+                                    const TextStyle(
+                                  color: AppColors
+                                      .textGray,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      // -----------------------------
+                      // عرض النتائج
+                      // -----------------------------
+
                       return ListView.builder(
                         scrollDirection:
                             Axis.horizontal,
                         padding:
-                            const EdgeInsets.symmetric(
+                            const EdgeInsets
+                                .symmetric(
                           horizontal: 16,
                         ),
                         physics:
@@ -689,32 +914,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  String _uploadPrescriptionText() {
-    return LocaleServiceHelper.isArabic
-        ? 'رفع وصفة'
-        : 'Upload Prescription';
-  }
-
-  String _shopByCategoryText() {
-    return LocaleServiceHelper.isArabic
-        ? 'تسوقي حسب الفئة'
-        : 'Shop by Category';
-  }
-}
-
-// ============================================================
-// مساعد بسيط للغة بدون تغيير باقي المشروع
-// ============================================================
-
-class LocaleServiceHelper {
-  static bool get isArabic =>
-      DirectionalityHelper.isArabic;
-}
-
-class DirectionalityHelper {
-  static bool get isArabic =>
-      WidgetsBinding.instance.platformDispatcher
-          .locale.languageCode ==
-      'ar';
 }

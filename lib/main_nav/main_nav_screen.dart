@@ -1,75 +1,142 @@
 import 'package:flutter/material.dart';
+
 import '../core/app_colors.dart';
+import '../core/app_strings.dart';
+
 import '../home/home_screen.dart';
 import '../home/categories_screen.dart';
 import '../home/cart_screen.dart';
-import '../services/cart_service.dart';
 import '../home/offers_screen.dart';
 import '../home/profile_screen.dart';
+
+import '../services/cart_service.dart';
+
 class MainNavScreen extends StatefulWidget {
   final bool isGuest;
 
-  const MainNavScreen({super.key, this.isGuest = false});
+  const MainNavScreen({
+    super.key,
+    this.isGuest = false,
+  });
 
   @override
   State<MainNavScreen> createState() => _MainNavScreenState();
 }
 
 class _MainNavScreenState extends State<MainNavScreen> {
-  int currentIndex = 2; // الرئيسية هي الافتراضية
-
-  final List<_NavItemData> items = const [
-    _NavItemData(icon: Icons.person_outline, label: 'حسابي'),
-    _NavItemData(icon: Icons.shopping_cart_outlined, label: 'سلة التسوق'),
-    _NavItemData(icon: Icons.home_outlined, label: 'الرئيسية'),
-    _NavItemData(icon: Icons.grid_view_outlined, label: 'الفئات'),
-    _NavItemData(icon: Icons.card_giftcard_outlined, label: 'العروض'),
-  ];
+  // الرئيسية هي الصفحة الافتراضية
+  int currentIndex = 2;
 
   @override
   void initState() {
     super.initState();
+
     CartService.instance.addListener(_onCartChanged);
   }
 
   @override
   void dispose() {
     CartService.instance.removeListener(_onCartChanged);
+
     super.dispose();
   }
 
   void _onCartChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
-Widget bodyForIndex(int index) {
-  switch (index) {
-    case 0:
-      return const ProfileScreen();
-    case 2:
-      return HomeScreen(isGuest: widget.isGuest);
-    case 3:
-      return const CategoriesScreen();
-    case 1:
-      return const CartScreen();
-    case 4:
-      return const OffersScreen();
-    default:
-      // TODO: استبدال هذا بالشاشة الفعلية (حسابي) لما نبنيها.
-      return Center(
-        child: Text(
-          '${items[index].label} — قريباً',
-          style: const TextStyle(color: AppColors.textGray),
-        ),
-      );
+  // ============================================================
+  // عناصر شريط التنقل
+  // ============================================================
+
+  List<_NavItemData> get items {
+    return [
+      _NavItemData(
+        icon: Icons.person_outline,
+        label: AppStrings.myAccount,
+      ),
+
+      _NavItemData(
+        icon: Icons.shopping_cart_outlined,
+        label: AppStrings.shoppingCart,
+      ),
+
+      _NavItemData(
+        icon: Icons.home_outlined,
+        label: AppStrings.home,
+      ),
+
+      _NavItemData(
+        icon: Icons.grid_view_outlined,
+        label: AppStrings.categories,
+      ),
+
+      _NavItemData(
+        icon: Icons.card_giftcard_outlined,
+        label: AppStrings.offers,
+      ),
+    ];
   }
-}
+
+  // ============================================================
+  // الشاشة حسب رقم التبويب
+  // ============================================================
+
+  Widget bodyForIndex(int index) {
+    switch (index) {
+      // حسابي
+      case 0:
+        return const ProfileScreen();
+
+      // السلة
+      case 1:
+        return const CartScreen();
+
+      // الرئيسية
+      case 2:
+        return HomeScreen(
+          isGuest: widget.isGuest,
+        );
+
+      // الفئات
+      case 3:
+        return const CategoriesScreen();
+
+      // العروض
+      case 4:
+        return const OffersScreen();
+
+      default:
+        return Center(
+          child: Text(
+            AppStrings.error,
+            style: const TextStyle(
+              color: AppColors.textGray,
+            ),
+          ),
+        );
+    }
+  }
+
+  // ============================================================
+  // Build
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
+    final navItems = items;
+
     return Scaffold(
       backgroundColor: AppColors.background,
+
       body: bodyForIndex(currentIndex),
+
+      // ========================================================
+      // Bottom Navigation
+      // ========================================================
+
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -81,83 +148,152 @@ Widget bodyForIndex(int index) {
             ),
           ],
         ),
+
         child: SafeArea(
           child: SizedBox(
             height: 62,
+
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(items.length, (index) {
-                final selected = index == currentIndex;
-                final item = items[index];
 
-                return InkWell(
-                  onTap: () {
-                    setState(() {
-                      currentIndex = index;
-                    });
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
+              children: List.generate(
+                navItems.length,
+                (index) {
+                  final bool selected =
+                      index == currentIndex;
+
+                  final item = navItems[index];
+
+                  return Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        if (currentIndex == index) {
+                          return;
+                        }
+
+                        setState(() {
+                          currentIndex = index;
+                        });
+                      },
+
+                      child: Column(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+
                         children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? AppColors.primary
-                                  : Colors.transparent,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              item.icon,
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.textGray,
-                              size: 20,
-                            ),
-                          ),
-                          if (index == 1 && CartService.instance.itemCount > 0)
-                            Positioned(
-                              top: -2,
-                              right: -2,
-                              child: Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: const BoxDecoration(color: Colors.red,
+                          // ======================================
+                          // الأيقونة + عدد المنتجات في السلة
+                          // ======================================
+
+                          Stack(
+                            clipBehavior: Clip.none,
+
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? AppColors.primary
+                                      : Colors.transparent,
+
                                   shape: BoxShape.circle,
                                 ),
-                                constraints: const BoxConstraints(
-                                    minWidth: 16, minHeight: 16),
-                                child: Text(
-                                  '${CartService.instance.itemCount}',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+
+                                child: Icon(
+                                  item.icon,
+
+                                  color: selected
+                                      ? Colors.white
+                                      : AppColors.textGray,
+
+                                  size: 20,
                                 ),
                               ),
+
+                              // ==================================
+                              // عدد المنتجات في السلة
+                              // ==================================
+
+                              if (index == 1 &&
+                                  CartService
+                                          .instance
+                                          .itemCount >
+                                      0)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+
+                                  child: Container(
+                                    padding:
+                                        const EdgeInsets.all(3),
+
+                                    decoration:
+                                        const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+
+                                    constraints:
+                                        const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+
+                                    child: Text(
+                                      '${CartService.instance.itemCount}',
+
+                                      textAlign:
+                                          TextAlign.center,
+
+                                      style:
+                                          const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight:
+                                            FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 3),
+
+                          // ======================================
+                          // اسم الصفحة
+                          // ======================================
+
+                          Text(
+                            item.label,
+
+                            maxLines: 1,
+
+                            overflow:
+                                TextOverflow.ellipsis,
+
+                            textAlign: TextAlign.center,
+
+                            style: TextStyle(
+                              fontSize: 9,
+
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.textGray,
+
+                              fontWeight: selected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 9,
-                          color:
-                              selected ? AppColors.primary : AppColors.textGray,
-                          fontWeight:
-                              selected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -166,9 +302,16 @@ Widget bodyForIndex(int index) {
   }
 }
 
+// ================================================================
+// بيانات عنصر التنقل
+// ================================================================
+
 class _NavItemData {
   final IconData icon;
   final String label;
 
-  const _NavItemData({required this.icon, required this.label});
+  const _NavItemData({
+    required this.icon,
+    required this.label,
+  });
 }

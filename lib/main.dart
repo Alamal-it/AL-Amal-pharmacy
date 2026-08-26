@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
 import 'auth/splash_screen.dart';
+import 'services/locale_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const AlamalApp());
 }
 
@@ -12,32 +15,50 @@ class AlamalApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'صيدلية الأمل',
+    return ListenableBuilder(
+      listenable: LocaleService.instance,
+      builder: (context, _) {
+        final locale =
+            LocaleService.instance.locale;
 
-      // ===== دعم اللغة العربية والـ RTL الحقيقي =====
-      locale: const Locale('ar'),
-      supportedLocales: const [
-        Locale('ar'), // العربية (اللغة الأساسية)
-        Locale('en'), // احتياطي لو احتجنا Localization لاحقاً
-      ],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
 
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xffF7F9FC),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xff0E4595),
-        ),
-        fontFamily: 'Cairo',
-      ),
+          title: LocaleService.instance.isArabic
+              ? 'صيدلية الأمل'
+              : 'Alamal Pharmacy',
 
-      home: const SplashScreen(),
+          locale: locale,
+
+          supportedLocales: const [
+            Locale('ar'),
+            Locale('en'),
+          ],
+
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+
+          theme: ThemeData(
+            useMaterial3: true,
+
+            scaffoldBackgroundColor:
+                const Color(0xffF7F9FC),
+
+            colorScheme:
+                ColorScheme.fromSeed(
+              seedColor:
+                  const Color(0xff0E4595),
+            ),
+
+            fontFamily: 'Cairo',
+          ),
+
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }

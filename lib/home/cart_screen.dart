@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
+import '../core/app_strings.dart';
 import '../services/cart_service.dart';
 import '../services/user_service.dart';
 import '../widgets/delivery_option_sheet.dart';
@@ -52,9 +53,9 @@ class _CartScreenState extends State<CartScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         centerTitle: true,
-        title: const Text(
-          'السلة',
-          style: TextStyle(
+        title: Text(
+          AppStrings.cartTitle,
+          style: const TextStyle(
             color: AppColors.primaryDark,
             fontWeight: FontWeight.w700,
             fontSize: 16,
@@ -81,18 +82,18 @@ class _CartScreenState extends State<CartScreen> {
                 size: 40, color: AppColors.textGray),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'سلتك فارغة',
-            style: TextStyle(
+          Text(
+            AppStrings.emptyCartTitle,
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: AppColors.primaryDark,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'أضف منتجات لبدء التسوق',
-            style: TextStyle(color: AppColors.textGray, fontSize: 12),
+          Text(
+            AppStrings.emptyCartSubtitle,
+            style: const TextStyle(color: AppColors.textGray, fontSize: 12),
           ),
         ],
       ),
@@ -130,7 +131,8 @@ class _CartScreenState extends State<CartScreen> {
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
                               width: 55,
-                              height: 55,color: AppColors.border.withOpacity(0.3),
+                              height: 55,
+                              color: AppColors.border.withOpacity(0.3),
                               child: const Icon(Icons.image_outlined,
                                   color: AppColors.textGray),
                             ),
@@ -143,7 +145,7 @@ class _CartScreenState extends State<CartScreen> {
                             children: [
                               Text(
                                 item.product.name,
-                                textAlign: TextAlign.right,
+                                textAlign: TextAlign.start,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -154,7 +156,7 @@ class _CartScreenState extends State<CartScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${item.product.price} ر.س',
+                                '${item.product.price} ${AppStrings.currency}',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textGray,
@@ -191,9 +193,9 @@ class _CartScreenState extends State<CartScreen> {
                       ],
                     ),
                   ),
-                  Positioned(
+                  PositionedDirectional(
                     top: 4,
-                    left: 4,
+                    end: 4,
                     child: InkWell(
                       onTap: () => cart.removeFromCart(item.product.id),
                       child: const Icon(Icons.close,
@@ -228,18 +230,19 @@ class _CartScreenState extends State<CartScreen> {
                     Expanded(
                       child: Container(
                         height: 42,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),decoration: BoxDecoration(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
                           border: Border.all(color: AppColors.border),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: TextField(
                           controller: couponController,
-                          textAlign: TextAlign.right,
-                          decoration: const InputDecoration(
+                          textAlign: TextAlign.start,
+                          decoration: InputDecoration(
                             isCollapsed: true,
                             border: InputBorder.none,
-                            hintText: 'أدخل كود الخصم',
-                            hintStyle: TextStyle(
+                            hintText: AppStrings.couponHint,
+                            hintStyle: const TextStyle(
                                 color: AppColors.textGray, fontSize: 12),
                           ),
                         ),
@@ -258,21 +261,21 @@ class _CartScreenState extends State<CartScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text('تطبيق',
-                            style: TextStyle(color: Colors.white)),
+                        child: Text(AppStrings.apply,
+                            style: const TextStyle(color: Colors.white)),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 14),
 
-                _summaryRow('المجموع الفرعي', subtotal),
+                _summaryRow(AppStrings.subtotal, subtotal),
                 const SizedBox(height: 6),
-                _summaryRow('الضريبة (15%)', tax),
+                _summaryRow(AppStrings.taxLabel, tax),
                 const SizedBox(height: 6),
-                _summaryRow('رسوم التوصيل', deliveryFee),
+                _summaryRow(AppStrings.deliveryFeeLabel, deliveryFee),
                 const Divider(height: 20, color: AppColors.border),
-                _summaryRow('الإجمالي', total, bold: true),
+                _summaryRow(AppStrings.totalLabel, total, bold: true),
 
                 const SizedBox(height: 14),
                 SizedBox(
@@ -317,9 +320,9 @@ class _CartScreenState extends State<CartScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'إتمام الشراء',
-                      style: TextStyle(
+                    child: Text(
+                      AppStrings.checkout,
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -348,7 +351,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ),
         Text(
-          '${value.toStringAsFixed(2)} ر.س',
+          '${value.toStringAsFixed(2)} ${AppStrings.currency}',
           style: TextStyle(
             fontSize: bold ? 15 : 12.5,
             fontWeight: bold ? FontWeight.bold : FontWeight.w600,

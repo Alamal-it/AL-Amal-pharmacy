@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/app_strings.dart';
+import '../services/locale_service.dart';
 import 'login_screen.dart';
 
 class AccountCreatedScreen extends StatelessWidget {
@@ -50,9 +51,7 @@ class AccountCreatedScreen extends StatelessWidget {
                 const SizedBox(height: 8),
 
                 Text(
-                  LocaleServiceHelper2.isArabic
-                      ? 'يمكنك الآن تسجيل الدخول والاستفادة من كل خدمات صيدلية الأمل'
-                      : 'You can now log in and enjoy all Alamal Pharmacy services',
+                  AppStrings.accountCreatedSubtitle,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Color(0xff7D8CA3),
@@ -90,9 +89,7 @@ class AccountCreatedScreen extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      LocaleServiceHelper2.isArabic
-                          ? 'عودة تسجيل الدخول'
-                          : 'Back to Login',
+                      AppStrings.backToLogin,
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -107,9 +104,4 @@ class AccountCreatedScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class LocaleServiceHelper2 {
-  static bool get isArabic =>
-      AppStrings.language == 'العربية';
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
 import 'auth/splash_screen.dart';
 import 'services/locale_service.dart';
 

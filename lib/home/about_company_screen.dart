@@ -103,7 +103,7 @@ class AboutCompanyScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _StatCard(
-                      value: '40+',
+                      value: '99+',
                       label: isAr ? 'فرع' : 'Branches',
                     ),
                   ),

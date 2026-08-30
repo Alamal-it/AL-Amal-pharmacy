@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../core/app_colors.dart';
 import '../core/app_strings.dart';
 import '../services/user_service.dart';
@@ -13,7 +12,13 @@ import 'about_company_screen.dart';
 import '../widgets/delivery_option_sheet.dart';
 import '../address/add_address_map_screen.dart';
 import '../services/address_service.dart';
-
+import 'faq_screen.dart';
+import 'delivery_info_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'terms_conditions_screen.dart';
+import 'loyalty_points_screen.dart';
+import 'my_prescriptions_screen.dart';
+import 'family_members_screen.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -570,7 +575,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.card_giftcard_outlined,
             label: AppStrings.loyaltyPoints,
             onTap: () {
-              // TODO: فتح شاشة نقاط الولاء لما تجهز.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const LoyaltyPointsScreen(),
+                ),
+              );
             },
           ),
 
@@ -578,7 +589,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.camera_alt_outlined,
             label: AppStrings.myPrescriptions,
             onTap: () {
-              // TODO: فتح شاشة وصفاتي المرفوعة لما تجهز.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const MyPrescriptionsScreen(),
+                ),
+              );
             },
           ),
 
@@ -586,7 +603,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.groups_outlined,
             label: AppStrings.familyMembers,
             onTap: () {
-              // TODO: فتح شاشة أفراد الأسرة لما تجهز.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const FamilyMembersScreen(),
+                ),
+              );
             },
           ),
 
@@ -636,7 +659,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.local_shipping_outlined,
             label: AppStrings.deliveryInfo,
             onTap: () {
-              // TODO: فتح شاشة معلومات التوصيل لما تجهز.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const DeliveryInfoScreen(),
+                ),
+              );
             },
           ),
 
@@ -644,7 +673,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.help_outline,
             label: AppStrings.faq,
             onTap: () {
-              // TODO: فتح شاشة الأسئلة الشائعة لما تجهز.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FaqScreen(),
+                ),
+              );
             },
           ),
 
@@ -674,7 +708,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.privacy_tip_outlined,
             label: AppStrings.privacyPolicy,
             onTap: () {
-              // TODO: فتح شاشة سياسة الخصوصية لما تجهز.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const PrivacyPolicyScreen(),
+                ),
+              );
             },
           ),
 
@@ -682,7 +722,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.description_outlined,
             label: AppStrings.termsConditions,
             onTap: () {
-              // TODO: فتح شاشة الشروط والأحكام لما تجهز.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const TermsConditionsScreen(),
+                ),
+              );
             },
           ),
 

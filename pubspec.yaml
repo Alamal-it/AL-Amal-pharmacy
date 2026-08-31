@@ -23,6 +23,8 @@ dependencies:
   geocoding: ^4.0.0
   image_picker: ^1.1.2
   url_launcher: ^6.3.1
+  google_sign_in: ^7.1.1
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

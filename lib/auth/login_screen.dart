@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:google_sign_in/google_sign_in.dart';
 import '../core/app_strings.dart';
 import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
@@ -19,8 +19,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final GlobalKey<FormState> formKey =
-      GlobalKey<FormState>();
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   final TextEditingController phoneController =
       TextEditingController();
@@ -28,8 +27,34 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController =
       TextEditingController();
 
+  // ============================================================
+  // Google Sign-In
+  // ============================================================
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+
+  bool _googleInitialized = false;
+
+  // ============================================================
+  // حالة الصفحة
+  // ============================================================
+
   bool obscurePassword = true;
   bool loading = false;
+
+  // ============================================================
+  // Web Client ID
+  // ============================================================
+  //
+  // ضعي هنا Web Client ID الذي أنشأتيه في Google Cloud.
+  //
+  // مثال:
+  // 123456789-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+  //
+  // لا تضعي Android Client ID هنا.
+  //
+  static const String webClientId =
+      '560062857783-v7jh7ra995cihidh8u30nfntl747grr2.apps.googleusercontent.com';
 
   @override
   void dispose() {
@@ -39,7 +64,23 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ============================================================
-  // تسجيل الدخول
+  // تهيئة Google Sign-In
+  // ============================================================
+
+  Future<void> initializeGoogleSignIn() async {
+    if (_googleInitialized) {
+      return;
+    }
+
+    await _googleSignIn.initialize(
+      serverClientId: webClientId,
+    );
+
+    _googleInitialized = true;
+  }
+
+  // ============================================================
+  // تسجيل الدخول العادي
   // ============================================================
 
   Future<void> login() async {
@@ -53,20 +94,30 @@ class _LoginScreenState extends State<LoginScreen> {
       loading = true;
     });
 
+    // ============================================================
     // مؤقت إلى أن يتم ربط API الحقيقي
+    // ============================================================
+
     await Future.delayed(
       const Duration(milliseconds: 300),
     );
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     UserService.instance.isLoggedIn = true;
+
     UserService.instance.phone =
         phoneController.text.trim();
 
     setState(() {
       loading = false;
     });
+
+    // ============================================================
+    // الانتقال بعد تسجيل الدخول
+    // ============================================================
 
     if (widget.fromCheckout) {
       Navigator.pop(context, true);
@@ -82,19 +133,156 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ============================================================
-  // Google
+  // تسجيل الدخول بواسطة Google
   // ============================================================
 
   Future<void> loginWithGoogle() async {
-    if (!mounted) return;
+    if (loading) {
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppStrings.googleLoginComingSoon,
+    try {
+      setState(() {
+        loading = true;
+      });
+
+      // تهيئة Google مرة واحدة
+      await initializeGoogleSignIn();
+
+      // فتح شاشة Google
+      final GoogleSignInAccount account =
+          await _googleSignIn.authenticate();
+
+      if (!mounted) {
+        return;
+      }
+
+      // ==========================================================
+      // معلومات حساب Google
+      // ==========================================================
+
+      final String googleEmail = account.email;
+      final String googleName =
+          account.displayName ?? '';
+
+      // ==========================================================
+      // مؤقتًا نعتبر المستخدم مسجل الدخول
+      //
+      // لاحقًا هنا نرسل Google ID Token / بيانات الدخول
+      // إلى Backend الخاص بك (Oracle API).
+      // ==========================================================
+
+      UserService.instance.isLoggedIn = true;
+
+      UserService.instance.phone = googleEmail;
+
+      // ==========================================================
+      // إزالة Loading
+      // ==========================================================
+
+      setState(() {
+        loading = false;
+      });
+
+      // ==========================================================
+      // الانتقال بعد تسجيل الدخول
+      // ==========================================================
+
+      if (widget.fromCheckout) {
+        Navigator.pop(context, true);
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const MainNavScreen(),
+          ),
+          (route) => false,
+        );
+      }
+
+      // منع تحذير المتغير غير المستخدم
+      debugPrint(
+        'Google Login: $googleName - $googleEmail',
+      );
+    } on GoogleSignInException catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _googleErrorMessage(e),
+          ),
         ),
-      ),
-    );
+      );
+
+      debugPrint(
+        'Google Sign-In Error: ${e.code}',
+      );
+
+      debugPrint(
+        'Google Sign-In Description: ${e.description}',
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'حدث خطأ أثناء تسجيل الدخول عبر Google: $e',
+          ),
+        ),
+      );
+
+      debugPrint(
+        'Google Sign-In Unknown Error: $e',
+      );
+    }
+  }
+
+  // ============================================================
+  // رسائل أخطاء Google
+  // ============================================================
+
+  String _googleErrorMessage(
+    GoogleSignInException e,
+  ) {
+    switch (e.code) {
+      case GoogleSignInExceptionCode.canceled:
+        return 'تم إلغاء تسجيل الدخول عبر Google.';
+
+      case GoogleSignInExceptionCode.clientConfigurationError:
+        return 'إعدادات Google غير صحيحة. تأكدي من Package Name و SHA-1 و Web Client ID.';
+
+      case GoogleSignInExceptionCode.providerConfigurationError:
+        return 'خدمة Google غير متاحة أو إعداداتها غير صحيحة.';
+
+      case GoogleSignInExceptionCode.uiUnavailable:
+        return 'تعذر فتح شاشة تسجيل الدخول عبر Google.';
+
+      case GoogleSignInExceptionCode.interrupted:
+        return 'تمت مقاطعة تسجيل الدخول عبر Google.';
+
+      case GoogleSignInExceptionCode.userMismatch:
+        return 'حساب Google المستخدم غير متطابق.';
+
+      case GoogleSignInExceptionCode.unknownError:
+        return 'حدث خطأ أثناء تسجيل الدخول عبر Google: ${e.description ?? ''}';
+
+      default:
+        return 'حدث خطأ أثناء تسجيل الدخول عبر Google: ${e.description ?? ''}';
+    }
   }
 
   // ============================================================
@@ -102,7 +290,9 @@ class _LoginScreenState extends State<LoginScreen> {
   // ============================================================
 
   Future<void> loginWithApple() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

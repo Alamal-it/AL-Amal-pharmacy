@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../services/cart_service.dart';
+import '../services/order_service.dart';
 import 'order_confirmation_screen.dart';
 
-enum PaymentChoice { mada, card, applePay, cashOnDelivery, tamara, wallet }
+enum PaymentChoice {
+  mada,
+  card,
+  applePay,
+  cashOnDelivery,
+  tamara,
+  wallet,
+}
 
 class PaymentMethodScreen extends StatefulWidget {
   final double totalAmount;
 
-  // ===== معلومات إضافية لتمريرها لشاشة تأكيد الطلب النهائية =====
+  // ===== معلومات إضافية لتمريرها لشاشة تأكيد الطلب =====
   final bool isPickup;
   final String? addressLine;
   final String? timeSlot;
@@ -26,14 +34,14 @@ class PaymentMethodScreen extends StatefulWidget {
   });
 
   @override
-  State<PaymentMethodScreen> createState() => _PaymentMethodScreenState();
+  State<PaymentMethodScreen> createState() =>
+      _PaymentMethodScreenState();
 }
 
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   PaymentChoice selected = PaymentChoice.mada;
 
-  // ===== كل خيار دفع له صورة شعار حقيقية (assetPath) + أيقونة احتياطية
-  // (fallbackIcon) لو الصورة مو موجودة بمجلد lib/assets حتى الآن. =====
+  // ===== خيارات الدفع =====
   final List<_PaymentOption> options = const [
     _PaymentOption(
       choice: PaymentChoice.mada,
@@ -56,7 +64,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     _PaymentOption(
       choice: PaymentChoice.cashOnDelivery,
       label: 'الدفع عند الاستلام',
-      assetPath: null, // ما فيه شعار بنكي لهذا الخيار، تبقى أيقونة عادية
+      assetPath: null,
       fallbackIcon: Icons.payments_outlined,
     ),
     _PaymentOption(
@@ -73,14 +81,65 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     ),
   ];
 
+  // =========================================================
+  // تأكيد الدفع وإنشاء الطلب
+  // =========================================================
+
+  void confirmPayment() {
+    // إنشاء رقم الطلب مرة واحدة فقط
+    final orderNumber =
+        (100000000 +
+                DateTime.now().millisecondsSinceEpoch %
+                    899999999)
+            .toString();
+
+    // حفظ الطلب مرة واحدة فقط
+    OrderService.instance.addOrder(
+      Order(
+        orderNumber: orderNumber,
+        items: List.from(CartService.instance.items),
+        totalAmount: widget.totalAmount,
+        date: DateTime.now(),
+        isPickup: widget.isPickup,
+      ),
+    );
+
+    // ملاحظة:
+    // لا نحذف السلة هنا قبل دخول شاشة التأكيد،
+    // لأن شاشة التأكيد قد تحتاج بيانات السلة.
+    //
+    // سيتم حذف السلة بعد إتمام الطلب من المكان المناسب.
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrderConfirmationScreen(
+          totalAmount: widget.totalAmount,
+          isPickup: widget.isPickup,
+          addressLine: widget.addressLine,
+          timeSlot: widget.timeSlot,
+          destinationLat: widget.destinationLat,
+          destinationLng: widget.destinationLng,
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // الواجهة
+  // =========================================================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
+
       appBar: AppBar(
         backgroundColor: AppColors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primaryDark),
+        iconTheme: const IconThemeData(
+          color: AppColors.primaryDark,
+        ),
         centerTitle: true,
         title: const Text(
           'طريقة الدفع',
@@ -91,32 +150,58 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           ),
         ),
       ),
+
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+
+        separatorBuilder: (_, __) =>
+            const SizedBox(height: 10),
+
         itemBuilder: (context, index) {
           final option = options[index];
-          final bool isSelected = selected == option.choice;
+
+          final bool isSelected =
+              selected == option.choice;
 
           return InkWell(
-            onTap: () => setState(() => selected = option.choice),
+            onTap: () {
+              setState(() {
+                selected = option.choice;
+              });
+            },
+
             borderRadius: BorderRadius.circular(12),
+
             child: Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 14),
+                horizontal: 14,
+                vertical: 14,
+              ),
+
               decoration: BoxDecoration(
                 color: AppColors.white,
                 borderRadius: BorderRadius.circular(12),
+
                 border: Border.all(
-                  color: isSelected ? AppColors.green : AppColors.border,
+                  color: isSelected
+                      ? AppColors.green
+                      : AppColors.border,
+
                   width: isSelected ? 1.6 : 1,
                 ),
               ),
+
               child: Row(
                 children: [
-                  _PaymentLogo(option: option),
+                  // شعار طريقة الدفع
+                  _PaymentLogo(
+                    option: option,
+                  ),
+
                   const SizedBox(width: 12),
+
+                  // اسم طريقة الدفع
                   Expanded(
                     child: Text(
                       option.label,
@@ -127,11 +212,16 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                       ),
                     ),
                   ),
+
+                  // دائرة الاختيار
                   Icon(
                     isSelected
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
-                    color: isSelected ? AppColors.green : AppColors.border,
+
+                    color: isSelected
+                        ? AppColors.green
+                        : AppColors.border,
                   ),
                 ],
               ),
@@ -139,36 +229,30 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           );
         },
       ),
+
+      // =====================================================
+      // زر تأكيد الدفع
+      // =====================================================
+
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
+
           child: SizedBox(
             width: double.infinity,
             height: 48,
+
             child: ElevatedButton(
-              onPressed: () {
-                // TODO: ربط عملية الدفع الفعلية بالـ API لما تجهز.
-                CartService.instance.clearCart();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderConfirmationScreen(
-                      totalAmount: widget.totalAmount,
-                      isPickup: widget.isPickup,
-                      addressLine: widget.addressLine,
-                      timeSlot: widget.timeSlot,
-                      destinationLat: widget.destinationLat,
-                      destinationLng: widget.destinationLng,
-                    ),
-                  ),
-                );
-              },
+              onPressed: confirmPayment,
+
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.green,
+
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
+
               child: const Text(
                 'تأكيد الدفع',
                 style: TextStyle(
@@ -185,32 +269,55 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   }
 }
 
-// ===== ودجت شعار وسيلة الدفع: يحاول يعرض صورة حقيقية، ولو مو موجودة
-// (assetPath فاضي أو الملف غير موجود بعد) يعرض أيقونة عادية بدلها. =====
+// =========================================================
+// شعار طريقة الدفع
+// =========================================================
+
 class _PaymentLogo extends StatelessWidget {
   final _PaymentOption option;
 
-  const _PaymentLogo({required this.option});
+  const _PaymentLogo({
+    required this.option,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // إذا ما فيه صورة، نعرض الأيقونة
     if (option.assetPath == null) {
-      return Icon(option.fallbackIcon, color: AppColors.primaryDark, size: 22);
+      return Icon(
+        option.fallbackIcon,
+        color: AppColors.primaryDark,
+        size: 22,
+      );
     }
 
+    // محاولة عرض الصورة
     return Image.asset(
       option.assetPath!,
       width: 28,
       height: 28,
       fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => Icon(
-        option.fallbackIcon,
-        color: AppColors.primaryDark,
-        size: 22,
-      ),
+
+      // إذا الصورة غير موجودة
+      // نعرض الأيقونة الاحتياطية
+      errorBuilder: (
+        context,
+        error,
+        stackTrace,
+      ) {
+        return Icon(
+          option.fallbackIcon,
+          color: AppColors.primaryDark,
+          size: 22,
+        );
+      },
     );
   }
 }
+
+// =========================================================
+// بيانات خيار الدفع
+// =========================================================
 
 class _PaymentOption {
   final PaymentChoice choice;

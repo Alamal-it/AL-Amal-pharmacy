@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../core/app_colors.dart';
 import '../core/app_strings.dart';
 import '../models/product.dart';
@@ -16,6 +15,7 @@ import 'favorites_screen.dart';
 import 'upload_prescription_screen.dart';
 import 'orders_screen.dart';
 import 'category_products_screen.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool isGuest;
@@ -268,7 +268,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               )
                             : IconButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const NotificationsScreen(),
+                                    ),
+                                  );
+                                },
                                 icon: const Icon(
                                   Icons.notifications_none,
                                   color: AppColors.primaryDark,

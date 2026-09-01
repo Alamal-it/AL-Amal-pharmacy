@@ -1,6 +1,8 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import '../core/app_colors.dart';
 import '../widgets/checkout_stepper.dart';
 import '../main_nav/main_nav_screen.dart';
@@ -10,7 +12,11 @@ import '../services/cart_service.dart';
 
 class OrderConfirmationScreen extends StatefulWidget {
   final double totalAmount;
+
+  // true = استلام من الفرع
+  // false = توصيل
   final bool isPickup;
+
   final String? addressLine;
   final String? timeSlot;
   final double? destinationLat;
@@ -35,14 +41,10 @@ class _OrderConfirmationScreenState
     extends State<OrderConfirmationScreen> {
   late final String orderNumber;
 
-  // ===== مراحل تتبع طلب التوصيل =====
-  // 0 = تم استلام الطلب
-  // 1 = جاري التجهيز
-  // 2 = خرج للتوصيل
-  // 3 = تم التسليم
-  //
-  // هذا الرقم مؤقت وتجريبي، وبعد ربط API
-  // يتم استبداله بالحالة الحقيقية للطلب.
+  // =========================================================
+  // مراحل تتبع طلب التوصيل
+  // =========================================================
+
   static const int currentDeliveryStage = 2;
 
   static const List<String> deliveryStages = [
@@ -52,6 +54,10 @@ class _OrderConfirmationScreenState
     'تم التسليم',
   ];
 
+  // =========================================================
+  // إنشاء الطلب
+  // =========================================================
+
   @override
   void initState() {
     super.initState();
@@ -59,16 +65,44 @@ class _OrderConfirmationScreenState
     orderNumber =
         (100000000 + Random().nextInt(899999999)).toString();
 
-    // حفظ الطلب
+    _createOrderAndClearCart();
+  }
+
+  // =========================================================
+  // إنشاء الطلب ثم تفريغ السلة
+  // =========================================================
+
+  void _createOrderAndClearCart() {
+    final cart = CartService.instance;
+
+    // نأخذ نسخة من المنتجات الموجودة في السلة
+    // قبل تفريغها.
+    final orderItems = cart.items
+        .map((item) => item)
+        .toList();
+
+    // إنشاء الطلب بالمنتجات الحالية
     OrderService.instance.addOrder(
       Order(
         orderNumber: orderNumber,
-        items: List.from(CartService.instance.items),
+        items: orderItems,
         totalAmount: widget.totalAmount,
         date: DateTime.now(),
         isPickup: widget.isPickup,
       ),
     );
+
+    // =======================================================
+    // مهم جدًا:
+    // بعد إنشاء الطلب يتم تفريغ السلة.
+    //
+    // بهذه الطريقة:
+    // 1- المنتجات تدخل في الطلب.
+    // 2- السلة تصبح فارغة.
+    // 3- رقم السلة في الرئيسية يرجع صفر.
+    // =======================================================
+
+    cart.clearCart();
   }
 
   // =========================================================
@@ -89,6 +123,7 @@ class _OrderConfirmationScreenState
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // علامة الصح
                 Container(
                   width: 80,
                   height: 80,
@@ -130,6 +165,7 @@ class _OrderConfirmationScreenState
 
                 const SizedBox(height: 16),
 
+                // رقم الطلب
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -156,7 +192,9 @@ class _OrderConfirmationScreenState
                   width: double.infinity,
                   height: 46,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
@@ -180,6 +218,7 @@ class _OrderConfirmationScreenState
       },
     );
 
+    // بعد الضغط على تم ننتقل للتقييم
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -214,7 +253,8 @@ class _OrderConfirmationScreenState
             ),
           ),
           content: const Text(
-            'هل أنتِ متأكدة من إلغاء هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.',
+            'هل أنتِ متأكدة من إلغاء هذا الطلب؟ '
+            'لا يمكن التراجع عن هذا الإجراء.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.textGray,
@@ -224,11 +264,15 @@ class _OrderConfirmationScreenState
           actionsAlignment: MainAxisAlignment.center,
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
               child: const Text('تراجع'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
               child: const Text(
                 'نعم، ألغي الطلب',
                 style: TextStyle(
@@ -243,8 +287,6 @@ class _OrderConfirmationScreenState
     );
 
     if (confirmed == true && mounted) {
-      // TODO: استدعاء API الإلغاء الحقيقي هنا.
-
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
@@ -256,13 +298,17 @@ class _OrderConfirmationScreenState
   }
 
   // =========================================================
-  // الواجهة الرئيسية
+  // الصفحة
   // =========================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
+
+      // =======================================================
+      // AppBar
+      // =======================================================
 
       appBar: AppBar(
         backgroundColor: AppColors.white,
@@ -281,25 +327,33 @@ class _OrderConfirmationScreenState
         ),
       ),
 
+      // =======================================================
+      // المحتوى
+      // =======================================================
+
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
+            // ===================================================
+            // شريط الخطوات
+            // ===================================================
+
+            const Padding(
+              padding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 10,
               ),
-              child: const CheckoutStepper(
+              child: CheckoutStepper(
                 currentStep: 2,
               ),
             ),
 
             const SizedBox(height: 10),
 
-            // =================================================
-            // الخريطة / الأيقونة
-            // =================================================
+            // ===================================================
+            // الخريطة / مكان الاستلام
+            // ===================================================
 
             widget.isPickup
                 ? _pickupPlaceholder()
@@ -307,9 +361,9 @@ class _OrderConfirmationScreenState
 
             const SizedBox(height: 18),
 
-            // =================================================
+            // ===================================================
             // حالة الاستلام
-            // =================================================
+            // ===================================================
 
             if (widget.isPickup) ...[
               Padding(
@@ -320,9 +374,9 @@ class _OrderConfirmationScreenState
                   mainAxisAlignment:
                       MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      widget.timeSlot ?? '01:20 ص - 01:30 ص',
-                      style: const TextStyle(
+                    const Text(
+                      '01:30 ص - 01:20 ص',
+                      style: TextStyle(
                         color: AppColors.primaryDark,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -335,10 +389,8 @@ class _OrderConfirmationScreenState
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            AppColors.green.withOpacity(0.12),
-                        borderRadius:
-                            BorderRadius.circular(20),
+                        color: AppColors.green.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
                         'جاهز للاستلام',
@@ -385,11 +437,13 @@ class _OrderConfirmationScreenState
                   ),
                 ),
               ),
-            ] else ...[
-              // =================================================
-              // مراحل التوصيل
-              // =================================================
+            ]
 
+            // ===================================================
+            // حالة التوصيل
+            // ===================================================
+
+            else ...[
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -398,10 +452,6 @@ class _OrderConfirmationScreenState
               ),
 
               const SizedBox(height: 16),
-
-              // =================================================
-              // بطاقة المندوب
-              // =================================================
 
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -417,9 +467,9 @@ class _OrderConfirmationScreenState
               color: AppColors.border,
             ),
 
-            // =================================================
+            // ===================================================
             // رقم الطلب
-            // =================================================
+            // ===================================================
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -456,9 +506,9 @@ class _OrderConfirmationScreenState
               color: AppColors.border,
             ),
 
-            // =================================================
-            // العنوان
-            // =================================================
+            // ===================================================
+            // الفرع / العنوان
+            // ===================================================
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -471,8 +521,7 @@ class _OrderConfirmationScreenState
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color:
-                          AppColors.green.withOpacity(0.14),
+                      color: AppColors.green.withOpacity(0.14),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -521,18 +570,16 @@ class _OrderConfirmationScreenState
               ),
             ),
 
-            // =================================================
+            // ===================================================
             // الاتجاهات
-            // =================================================
+            // ===================================================
 
             if (widget.isPickup) ...[
               const SizedBox(height: 6),
 
               TextButton.icon(
                 onPressed: () {
-                  // TODO:
-                  // فتح تطبيق الخرائط بموقع الفرع
-                  // عند توفر رابط الموقع الحقيقي.
+                  // يمكن ربط الخرائط هنا لاحقًا.
                 },
                 icon: const Icon(
                   Icons.directions_outlined,
@@ -557,9 +604,9 @@ class _OrderConfirmationScreenState
 
             const SizedBox(height: 16),
 
-            // =================================================
+            // ===================================================
             // إجمالي الطلب
-            // =================================================
+            // ===================================================
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -592,9 +639,9 @@ class _OrderConfirmationScreenState
 
             const SizedBox(height: 24),
 
-            // =================================================
-            // زر إتمام الطلب
-            // =================================================
+            // ===================================================
+            // زر إنهاء الطلب
+            // ===================================================
 
             Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -627,9 +674,9 @@ class _OrderConfirmationScreenState
               ),
             ),
 
-            // =================================================
+            // ===================================================
             // زر إلغاء الطلب
-            // =================================================
+            // ===================================================
 
             if (!widget.isPickup)
               Padding(
@@ -669,7 +716,7 @@ class _OrderConfirmationScreenState
   }
 
   // =========================================================
-  // أيقونة الاستلام
+  // شكل الاستلام
   // =========================================================
 
   Widget _pickupPlaceholder() {
@@ -709,7 +756,6 @@ class _OrderConfirmationScreenState
   // =========================================================
 
   Widget _deliveryLiveMap() {
-    // إذا لم تصل الإحداثيات
     if (widget.destinationLat == null ||
         widget.destinationLng == null) {
       return Container(
@@ -735,7 +781,7 @@ class _OrderConfirmationScreenState
       widget.destinationLng!,
     );
 
-    // موقع المندوب تجريبي مؤقت
+    // موقع تجريبي للمندوب
     final courierPosition = LatLng(
       destination.latitude - 0.01,
       destination.longitude - 0.01,
@@ -758,7 +804,6 @@ class _OrderConfirmationScreenState
           target: destination,
           zoom: 13,
         ),
-
         markers: {
           Marker(
             markerId: const MarkerId(
@@ -772,7 +817,6 @@ class _OrderConfirmationScreenState
               title: 'عنوانك',
             ),
           ),
-
           Marker(
             markerId: const MarkerId(
               'courier',
@@ -786,7 +830,6 @@ class _OrderConfirmationScreenState
             ),
           ),
         },
-
         polylines: {
           Polyline(
             polylineId: const PolylineId(
@@ -800,7 +843,6 @@ class _OrderConfirmationScreenState
             width: 4,
           ),
         },
-
         zoomControlsEnabled: false,
         myLocationButtonEnabled: false,
         scrollGesturesEnabled: false,
@@ -811,7 +853,7 @@ class _OrderConfirmationScreenState
   }
 
   // =========================================================
-  // مراحل تتبع التوصيل
+  // مراحل التوصيل
   // =========================================================
 
   Widget _deliveryStagesTracker() {
@@ -882,13 +924,13 @@ class _OrderConfirmationScreenState
                               size: 14,
                               color: Colors.white,
                             )
-                          : (isCurrent
+                          : isCurrent
                               ? const Icon(
                                   Icons.local_shipping,
                                   size: 12,
                                   color: Colors.white,
                                 )
-                              : null),
+                              : null,
                     ),
 
                     if (!isLast)
@@ -927,9 +969,7 @@ class _OrderConfirmationScreenState
         children: [
           IconButton(
             onPressed: () {
-              // TODO:
-              // ربط الاتصال الحقيقي برقم المندوب
-              // عند توفر الرقم من API.
+              // ربط الاتصال الحقيقي لاحقًا.
             },
             icon: const Icon(
               Icons.phone_outlined,
@@ -950,9 +990,7 @@ class _OrderConfirmationScreenState
                     color: AppColors.primaryDark,
                   ),
                 ),
-
                 SizedBox(height: 2),
-
                 Text(
                   'مندوب التوصيل',
                   style: TextStyle(
@@ -970,8 +1008,7 @@ class _OrderConfirmationScreenState
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color:
-                  AppColors.primary.withOpacity(0.12),
+              color: AppColors.primary.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -986,7 +1023,7 @@ class _OrderConfirmationScreenState
   }
 
   // =========================================================
-  // نقطة الحالة
+  // نقاط الحالة
   // =========================================================
 
   Widget _dot({
@@ -1005,7 +1042,7 @@ class _OrderConfirmationScreenState
   }
 
   // =========================================================
-  // خط الحالة
+  // الخط بين النقاط
   // =========================================================
 
   Widget _line({

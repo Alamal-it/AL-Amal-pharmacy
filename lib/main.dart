@@ -1,63 +1,110 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'auth/splash_screen.dart';
-import 'services/locale_service.dart';
+import 'package:flutter/material.dart'; import 'package:flutter_localizations/flutter_localizations.dart';
+import 'auth/splash_screen.dart'; import 'services/locale_service.dart';
+Future<void> main() async { WidgetsFlutterBinding.ensureInitialized();
+// تحميل اللغة المحفوظة قبل تشغيل التطبيق await LocaleService.instance.loadSavedLocale();
+runApp(const AlamalApp()); }
+class AlamalApp extends StatelessWidget { const AlamalApp({super.key});
+@override Widget build(BuildContext context) { return ListenableBuilder( listenable: LocaleService.instance, builder: (context, _) { final locale = LocaleService.instance.locale;
+    final isArabic = locale.languageCode == 'ar';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
 
-  runApp(const AlamalApp());
-}
+      // ======================================================
+      // اسم التطبيق
+      // ======================================================
 
-class AlamalApp extends StatelessWidget {
-  const AlamalApp({super.key});
+      title: isArabic
+          ? 'صيدلية الأمل'
+          : 'Alamal Pharmacy',
 
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: LocaleService.instance,
-      builder: (context, _) {
-        final locale =
-            LocaleService.instance.locale;
+      // ======================================================
+      // اللغة الحالية
+      // ======================================================
 
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
+      locale: locale,
 
-          title: LocaleService.instance.isArabic
-              ? 'صيدلية الأمل'
-              : 'Alamal Pharmacy',
+      // ======================================================
+      // اللغات المدعومة
+      // ======================================================
 
-          locale: locale,
+      supportedLocales: const [
+        Locale('ar'),
+        Locale('en'),
+      ],
 
-          supportedLocales: const [
-            Locale('ar'),
-            Locale('en'),
-          ],
+      // ======================================================
+      // Flutter Localization
+      // ======================================================
 
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
 
-          theme: ThemeData(
-            useMaterial3: true,
+      // ======================================================
+      // اتجاه التطبيق
+      // ======================================================
 
-            scaffoldBackgroundColor:
-                const Color(0xffF7F9FC),
-
-            colorScheme:
-                ColorScheme.fromSeed(
-              seedColor:
-                  const Color(0xff0E4595),
-            ),
-
-            fontFamily: 'Cairo',
-          ),
-
-          home: const SplashScreen(),
+      builder: (context, child) {
+        return Directionality(
+          textDirection:
+              isArabic ? TextDirection.rtl : TextDirection.ltr,
+          child: child ?? const SizedBox.shrink(),
         );
       },
+
+      // ======================================================
+      // Theme
+      // ======================================================
+
+      theme: ThemeData(
+        useMaterial3: true,
+
+        scaffoldBackgroundColor:
+            const Color(0xffF7F9FC),
+
+        colorScheme:
+            ColorScheme.fromSeed(
+          seedColor:
+              const Color(0xff0E4595),
+        ),
+
+        fontFamily: 'Cairo',
+
+        // ====================================================
+        // AppBar
+        // ====================================================
+
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+        ),
+
+        // ====================================================
+        // Text Fields
+        // ====================================================
+
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+
+      // ======================================================
+      // الشاشة الأولى
+      // ======================================================
+
+      home: const SplashScreen(),
     );
-  }
-}
+  },
+);
+} }

@@ -9,6 +9,58 @@ class AppStrings {
       LocaleService.instance.isArabic ? ar : en;
 
   // =========================================================
+  // عام
+  // =========================================================
+
+  static String get appName =>
+      _t('صيدلية الأمل', 'Alamal Pharmacy');
+
+  static String get loading =>
+      _t('جاري التحميل...', 'Loading...');
+
+  static String get save =>
+      _t('حفظ', 'Save');
+
+  static String get cancel =>
+      _t('إلغاء', 'Cancel');
+
+  static String get confirm =>
+      _t('متابعة', 'Continue');
+
+  static String get back =>
+      _t('رجوع', 'Back');
+
+  static String get next =>
+      _t('التالي', 'Next');
+
+  static String get done =>
+      _t('تم', 'Done');
+
+  static String get close =>
+      _t('إغلاق', 'Close');
+
+  static String get search =>
+      _t('بحث', 'Search');
+
+  static String get retry =>
+      _t('إعادة المحاولة', 'Retry');
+
+  static String get yes =>
+      _t('نعم', 'Yes');
+
+  static String get no =>
+      _t('لا', 'No');
+
+  static String get error =>
+      _t('حدث خطأ', 'Something went wrong');
+
+  static String get noResults =>
+      _t('لا توجد نتائج', 'No results found');
+
+  static String get requiredField =>
+      _t('هذا الحقل مطلوب', 'This field is required');
+
+  // =========================================================
   // حسابي
   // =========================================================
 
@@ -102,12 +154,6 @@ class AppStrings {
   static String get login =>
       _t('تسجيل الدخول', 'Log In');
 
-  static String get cancel =>
-      _t('إلغاء', 'Cancel');
-
-  static String get confirm =>
-      _t('متابعة', 'Continue');
-
   // =========================================================
   // معلومات الشركة
   // =========================================================
@@ -116,8 +162,10 @@ class AppStrings {
       _t('ابقي على تواصل معنا', 'Stay Connected With Us');
 
   static String get vatCertificate =>
-      _t('شهادة ضريبة القيمة المضافة',
-          'VAT Registration Certificate');
+      _t(
+        'شهادة ضريبة القيمة المضافة',
+        'VAT Registration Certificate',
+      );
 
   static String get tapForDetails =>
       _t(
@@ -284,9 +332,6 @@ class AppStrings {
 
   static String get offers =>
       _t('العروض', 'Offers');
-
-  static String get error =>
-      _t('حدث خطأ', 'Something went wrong');
 
   // =========================================================
   // تسجيل الدخول
@@ -559,6 +604,114 @@ class AppStrings {
       _t('إرسال الرمز', 'Send Code');
 
   // =========================================================
+  // التحقق من الرمز
+  // =========================================================
+
+  static String get verifyCodeTitle =>
+      _t(
+        'التحقق من الرمز',
+        'Verify Code',
+      );
+
+  static String get verifyCodeSubtitle =>
+      _t(
+        'أدخل رمز التحقق المرسل إلى',
+        'Enter the verification code sent to',
+      );
+
+  static String get didNotReceiveCode =>
+      _t(
+        'لم يصلك الرمز؟ إعادة الإرسال خلال',
+        'Didn\'t receive the code? Resend in',
+      );
+
+  static String get resendCode =>
+      _t(
+        'إعادة إرسال الرمز',
+        'Resend Code',
+      );
+
+  static String get verify =>
+      _t(
+        'تحقق',
+        'Verify',
+      );
+
+  static String get codeResent =>
+      _t(
+        'تم إرسال رمز جديد',
+        'A new code has been sent',
+      );
+
+  static String get enterFullCode =>
+      _t(
+        'أدخل رمز التحقق كاملًا',
+        'Please enter the complete verification code',
+      );
+
+  // =========================================================
+  // إعادة تعيين كلمة المرور
+  // =========================================================
+
+  static String get resetPasswordTitle =>
+      _t(
+        'إعادة تعيين كلمة السر',
+        'Reset Password',
+      );
+
+  static String get resetPasswordSubtitle =>
+      _t(
+        'أدخل كلمة سر جديدة لحسابك',
+        'Enter a new password for your account',
+      );
+
+  static String get newPassword =>
+      _t(
+        'كلمة المرور الجديدة',
+        'New Password',
+      );
+
+  static String get confirmPassword =>
+      _t(
+        'تأكيد كلمة المرور',
+        'Confirm Password',
+      );
+
+  static String get confirmPasswordRequired =>
+      _t(
+        'يرجى تأكيد كلمة المرور',
+        'Please confirm your password',
+      );
+
+  static String get passwordsDoNotMatch =>
+      _t(
+        'كلمتا المرور غير متطابقتين',
+        'Passwords do not match',
+      );
+
+  static String get savePassword =>
+      _t(
+        'حفظ كلمة السر',
+        'Save Password',
+      );
+
+  // =========================================================
+  // نجاح تغيير كلمة المرور
+  // =========================================================
+
+  static String get passwordResetSuccessTitle =>
+      _t(
+        'تم إنشاء كلمة السر بنجاح',
+        'Password created successfully',
+      );
+
+  static String get passwordResetSuccessSubtitle =>
+      _t(
+        'يمكنك الآن تسجيل الدخول بكلمة السر الجديدة',
+        'You can now log in with your new password',
+      );
+
+  // =========================================================
   // العروض
   // =========================================================
 
@@ -637,5 +790,413 @@ class AppStrings {
         'حفظ التعديلات',
         'Save Changes',
       );
-}
 
+  // =========================================================
+  // المنتجات حسب الفئة
+  // =========================================================
+
+  static String get noProductsInCategory =>
+      _t(
+        'لا توجد منتجات حالياً في هذه الفئة',
+        'No products currently available in this category',
+      );
+
+  // =========================================================
+  // الاستلام من الفرع
+  // =========================================================
+
+  static String get pickupFromBranch =>
+      _t(
+        'استلام من الفرع',
+        'Pickup from Branch',
+      );
+
+  static String get nearbyPharmacies =>
+      _t(
+        'الصيدليات القريبة منك',
+        'Nearby Pharmacies',
+      );
+
+  static String get optionalNote =>
+      _t(
+        'هل تحتاجين ملاحظة؟ (اختياري)',
+        'Need a note? (Optional)',
+      );
+
+  static String get noteHint =>
+      _t(
+        'مثال: اتصل قبل الوصول',
+        'Example: Call before arrival',
+      );
+
+  static String get totalOrder =>
+      _t(
+        'إجمالي الطلب',
+        'Order Total',
+      );
+
+  static String get confirmBranch =>
+      _t(
+        'تأكيد الفرع',
+        'Confirm Branch',
+      );
+
+  // =========================================================
+  // فروع الصيدلية
+  // =========================================================
+
+  static String get branchSafa =>
+      _t(
+        'فرع الصفا',
+        'Al Safa Branch',
+      );
+
+  static String get branchSafaAddress =>
+      _t(
+        'حي السويس، شارع الأمير سلطان',
+        'Al-Suwais District, Prince Sultan Street',
+      );
+
+  static String get branchRawdah =>
+      _t(
+        'فرع الروضة',
+        'Al Rawdah Branch',
+      );
+
+  static String get branchRawdahAddress =>
+      _t(
+        'حي الروضة، جازان',
+        'Al Rawdah District, Jazan',
+      );
+
+  static String get branchBeach =>
+      _t(
+        'فرع الشاطئ',
+        'Al Shati Branch',
+      );
+
+  static String get branchBeachAddress =>
+      _t(
+        'حي الشاطئ، جازان',
+        'Al Shati District, Jazan',
+      );
+
+  static String distanceKm(double distance) {
+    final formatted = distance.toStringAsFixed(2);
+
+    return _t(
+      '$formatted كم',
+      '$formatted km',
+    );
+  }
+
+  // =========================================================
+  // معلومات التوصيل
+  // =========================================================
+
+  static String get deliveryDuration =>
+      _t(
+        'مدة التوصيل',
+        'Delivery Duration',
+      );
+
+  static String get deliveryDurationBody =>
+      _t(
+        'تاريخ عملية الشحن يعتمد على طلب الشراء الخاص بك، من ناحية المدينة وطريقة الدفع. يرجى الملاحظة أن طلبات الحجز غير مدرجة ضمن الوقت القياسي للشحن الملخص أدناه.\n\n'
+        'الحد الأقصى للتوصيل هو 7 أيام عمل للطلبات خارج نطاق تواجدنا، أما في المدن المتواجدين فيها كجازان وأبها وخميس مشيط فإن مدة التوصيل من ساعتين إلى يومي عمل، ويتوقف ذلك على نوعية الأصناف وكمياتها.\n\n'
+        'وقت التوصيل يتم بالتقدير وليس مضمونًا. لمراجعة تاريخ ووقت التوصيل المقدّر يرجى مراجعة صفحة المنتج، حيث يتم تحديثها بانتظام بالاعتماد على أحدث المعلومات.',
+        'Delivery time depends on your order, including the city and payment method. Please note that reservation orders are not included in the standard shipping time mentioned below.\n\n'
+        'The maximum delivery time is 7 business days for orders outside our service areas. In cities where we operate, such as Jazan, Abha, and Khamis Mushait, delivery usually takes from two hours to two business days, depending on the type and quantity of products.\n\n'
+        'Delivery time is an estimate and is not guaranteed. To check the estimated delivery date and time, please review the product page, which is regularly updated based on the latest information.',
+      );
+
+  static String get deliverySchedule =>
+      _t(
+        'تنسيق موعد التوصيل',
+        'Delivery Scheduling',
+      );
+
+  static String get deliveryScheduleBody =>
+      _t(
+        'يعتمد التوصيل على قبول العميل وتحديد موعد التوصيل مع فريق صيدلية الأمل أو شركات الشحن الأخرى. في حال تعذّر الاتصال بالعميل بالموعد المحدد، قد يحصل تأخير في توصيل الشحنة دون أدنى مسؤولية على شركة الأمل.',
+        'Delivery depends on the customer accepting and scheduling a delivery time with Alamal Pharmacy or other shipping companies. If the customer cannot be reached at the scheduled time, delivery may be delayed without any responsibility on Alamal.',
+      );
+
+  static String get freeDelivery =>
+      _t(
+        'التوصيل المجاني',
+        'Free Delivery',
+      );
+
+  static String get freeDeliveryBody =>
+      _t(
+        'تتكفل صيدليات الأمل بخدمة التوصيل المجاني للطلبات التي تبلغ 199 ريالًا وأكثر.',
+        'Alamal Pharmacies provides free delivery for orders of SAR 199 or more.',
+      );
+
+  static String get coverageArea =>
+      _t(
+        'نطاق التغطية',
+        'Coverage Area',
+      );
+
+  static String get coverageAreaBody =>
+      _t(
+        'يرجى الملاحظة أن طلبات الشراء التي يكون مكان إقامة العميل فيها غير محدد ضمن قائمة المدن والأحياء في عنوان الشحن، يحق لصيدليات الأمل إلغاؤها مباشرة.\n\n'
+        'إذا تم طلب الشراء لمنتجات كبيرة وصغيرة معًا، فقد يتم توصيلها للمكان المحدد لكن بشحنات مختلفة وأوقات مختلفة.',
+        'Please note that Alamal Pharmacies may directly cancel orders when the customer’s location is not included in the list of cities and districts available in the shipping address.\n\n'
+        'If an order contains both large and small products, they may be delivered to the specified location in separate shipments and at different times.',
+      );
+
+  static String get pickupFromPharmacyTitle =>
+      _t(
+        'الاستلام من الصيدلية',
+        'Pickup from Pharmacy',
+      );
+
+  static String get pickupFromPharmacyBody =>
+      _t(
+        'لا تريدين انتظار التوصيل؟ استلمي من الصيدلية!\n\n'
+        'ببساطة اطلبي المنتج من التطبيق واختاري "استلام من الصيدلية" كخيار للتوصيل، وسنقوم بتجهيز طلبك لاستلامه من الفرع الذي تم اختياره.\n\n'
+        'الخدمة متاحة في جميع صيدليات الأمل في حال توفر المنتجات، وسيصلك إشعار عند جاهزية طلبك للاستلام.\n\n'
+        'يمكن الدفع في الصيدلية عند استلام الطلب، أو عبر التطبيق عند إنشاء الطلب.',
+        'Don’t want to wait for delivery? Pick up your order from the pharmacy!\n\n'
+        'Simply order the product through the app and select "Pickup from Pharmacy" as your delivery option. We will prepare your order for pickup at the selected branch.\n\n'
+        'The service is available at all Alamal Pharmacies subject to product availability. You will receive a notification when your order is ready for pickup.\n\n'
+        'You can pay at the pharmacy when collecting your order, or through the app when placing the order.',
+      );
+
+  // =========================================================
+  // طرق الدفع
+  // =========================================================
+
+  static String get paymentMethod =>
+      _t(
+        'طريقة الدفع',
+        'Payment Method',
+      );
+
+  static String get choosePaymentMethod =>
+      _t(
+        'اختاري طريقة الدفع',
+        'Choose a payment method',
+      );
+
+  static String get cashOnDelivery =>
+      _t(
+        'الدفع عند الاستلام',
+        'Cash on Delivery',
+      );
+
+  static String get cardPayment =>
+      _t(
+        'الدفع بالبطاقة',
+        'Card Payment',
+      );
+
+  static String get applePay =>
+      _t(
+        'Apple Pay',
+        'Apple Pay',
+      );
+
+  static String get mada =>
+      _t(
+        'مدى',
+        'Mada',
+      );
+
+  static String get payNow =>
+      _t(
+        'ادفعي الآن',
+        'Pay Now',
+      );
+
+  // =========================================================
+  // الطلب
+  // =========================================================
+
+  static String get orderConfirmed =>
+      _t(
+        'تم تأكيد طلبك',
+        'Your order has been confirmed',
+      );
+
+  static String get orderNumber =>
+      _t(
+        'رقم الطلب',
+        'Order Number',
+      );
+
+  static String get orderDetails =>
+      _t(
+        'تفاصيل الطلب',
+        'Order Details',
+      );
+
+  static String get orderStatus =>
+      _t(
+        'حالة الطلب',
+        'Order Status',
+      );
+
+  static String get continueShopping =>
+      _t(
+        'متابعة التسوق',
+        'Continue Shopping',
+      );
+
+  // =========================================================
+  // العناوين
+  // =========================================================
+
+  static String get addAddress =>
+      _t(
+        'إضافة عنوان',
+        'Add Address',
+      );
+
+  static String get editAddress =>
+      _t(
+        'تعديل العنوان',
+        'Edit Address',
+      );
+
+  static String get addressDetails =>
+      _t(
+        'تفاصيل العنوان',
+        'Address Details',
+      );
+
+  static String get addressName =>
+      _t(
+        'اسم العنوان',
+        'Address Name',
+      );
+
+  static String get homeAddress =>
+      _t(
+        'المنزل',
+        'Home',
+      );
+
+  static String get workAddress =>
+      _t(
+        'العمل',
+        'Work',
+      );
+
+  static String get saveAddress =>
+      _t(
+        'حفظ العنوان',
+        'Save Address',
+      );
+
+  // =========================================================
+  // الفئات الإضافية
+  // =========================================================
+
+  static String get categoryMedicines =>
+      _t(
+        'الأدوية',
+        'Medicines',
+      );
+
+  static String get categoryHealthCare =>
+      _t(
+        'العناية الصحية',
+        'Health Care',
+      );
+
+  static String get categoryMedicalDevices =>
+      _t(
+        'أدوات طبية',
+        'Medical Devices',
+      );
+
+  static String get categorySkinCare =>
+      _t(
+        'العناية بالبشرة',
+        'Skin Care',
+      );
+
+  static String get categoryVitamins =>
+      _t(
+        'الفيتامينات',
+        'Vitamins',
+      );
+
+  static String get categoryKids =>
+      _t(
+        'الأطفال',
+        'Kids',
+      );
+
+  // =========================================================
+  // تحويل اسم الفئة إلى اللغة الحالية
+  // =========================================================
+
+  static String categoryName(String category) {
+    switch (category.trim()) {
+      case 'الأدوية':
+      case 'Medicines':
+        return medicines;
+
+      case 'العناية الصحية':
+      case 'Health Care':
+        return healthCare;
+
+      case 'أجهزة طبية':
+      case 'أدوات طبية':
+      case 'Medical Devices':
+        return medicalDevices;
+
+      case 'العناية بالبشرة':
+      case 'Skin Care':
+        return skinCare;
+
+      case 'الفيتامينات':
+      case 'Vitamins':
+        return vitamins;
+
+      case 'الأطفال':
+      case 'Kids':
+        return kids;
+
+      case 'الأم والطفل':
+      case 'Mother & Baby':
+        return motherAndBaby;
+
+      case 'العناية بالشعر':
+      case 'Hair Care':
+        return hairCare;
+
+      case 'العطور':
+      case 'Perfumes':
+        return perfumes;
+
+      case 'عناية باليدين':
+      case 'Hand Care':
+        return handCare;
+
+      case 'الجمال':
+      case 'Beauty':
+        return beauty;
+
+      case 'العناية بالمنزل':
+      case 'Home Care':
+        return homeCare;
+
+      case 'العناية اليومية':
+      case 'Daily Care':
+        return dailyCare;
+
+      case 'التغذية الرياضية':
+      case 'Sports Nutrition':
+        return sportsNutrition;
+
+      default:
+        return category;
+    }
+  }
+}

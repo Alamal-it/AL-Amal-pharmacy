@@ -69,7 +69,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     ),
     _PaymentOption(
       choice: PaymentChoice.tamara,
-      label: 'تمارا / تقسيط',
+      label: 'تمارا  ',
       assetPath: 'lib/assets/tamara_icon.png',
       fallbackIcon: Icons.calendar_month_outlined,
     ),

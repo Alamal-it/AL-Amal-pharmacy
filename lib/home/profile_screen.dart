@@ -23,6 +23,7 @@ import 'terms_conditions_screen.dart';
 import 'loyalty_points_screen.dart';
 import 'my_prescriptions_screen.dart';
 import 'family_members_screen.dart';
+import 'contact_us_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -597,7 +598,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.support_agent_outlined,
             label: AppStrings.contactUs,
             onTap: () {
-              // TODO: فتح شاشة التواصل لما تجهز.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ContactUsScreen(),
+                ),
+              );
             },
           ),
 

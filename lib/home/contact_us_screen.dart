@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/app_colors.dart';
+import '../core/app_strings.dart';
 
 class ContactUsScreen extends StatelessWidget {
   const ContactUsScreen({super.key});
@@ -18,7 +19,7 @@ class ContactUsScreen extends StatelessWidget {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح التطبيق المطلوب')),
+        SnackBar(content: Text(AppStrings.unableToOpenApp)),
       );
     }
   }
@@ -37,9 +38,9 @@ class ContactUsScreen extends StatelessWidget {
         backgroundColor: AppColors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'اتصل بنا',
-          style: TextStyle(
+        title: Text(
+          AppStrings.contactUs,
+          style: const TextStyle(
             color: AppColors.primaryDark,
             fontWeight: FontWeight.w700,
             fontSize: 16,
@@ -49,9 +50,9 @@ class ContactUsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          const Text(
-            'معلومات الاتصال',
-            style: TextStyle(
+          Text(
+            AppStrings.contactInformation,
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: AppColors.primaryDark,
@@ -70,7 +71,7 @@ class ContactUsScreen extends StatelessWidget {
               const _RowDivider(),
               _InfoRow(
                 icon: Icons.access_time_outlined,
-                label: _workingHours,
+                label: AppStrings.workingHours,
               ),
               const _RowDivider(),
               _ContactRow(

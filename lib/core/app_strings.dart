@@ -1131,7 +1131,209 @@ class AppStrings {
         'الأطفال',
         'Kids',
       );
+static String get contactInformation =>
+    _t(
+      'معلومات الاتصال',
+      'Contact Information',
+    );
 
+static String get workingHours =>
+    _t(
+      'الأحد - الخميس، من 10 صباحًا حتى 6 مساءً',
+      'Sunday - Thursday, from 10 AM to 6 PM',
+    );
+
+static String get unableToOpenApp =>
+    _t(
+      'تعذر فتح التطبيق المطلوب',
+      'Unable to open the required app',
+    );
+
+    static String get deliveryAppointment =>
+    _t(
+      'موعد التوصيل',
+      'Delivery Appointment',
+    );
+
+static String get chooseDay =>
+    _t(
+      'اختاري اليوم',
+      'Choose a day',
+    );
+
+static String get chooseDeliveryDayDescription =>
+    _t(
+      'حددي اليوم المناسب لاستلام طلبك',
+      'Select a convenient day to receive your order',
+    );
+
+static String get chooseTime =>
+    _t(
+      'اختاري الوقت',
+      'Choose a time',
+    );
+
+static String get chooseDeliveryTimeDescription =>
+    _t(
+      'اختاري الفترة المناسبة لتوصيل طلبك',
+      'Select a convenient delivery time',
+    );
+
+static String get selectedDeliveryDay =>
+    _t(
+      'موعد التوصيل المحدد',
+      'Selected delivery date',
+    );
+
+static String get deliverySummary =>
+    _t(
+      'ملخص موعد التوصيل',
+      'Delivery appointment summary',
+    );
+
+static String get confirmAppointment =>
+    _t(
+      'تأكيد الموعد',
+      'Confirm appointment',
+    );
+
+static String get selectDeliveryTime =>
+    _t(
+      'يرجى اختيار وقت التوصيل',
+      'Please select a delivery time',
+    );
+
+static String get noDeliveryTimes =>
+    _t(
+      'لا توجد أوقات توصيل متاحة لهذا اليوم',
+      'No delivery times are available for this day',
+    );
+
+static String get full =>
+    _t(
+      'ممتلئ',
+      'Fully booked',
+    );
+
+static String get today =>
+    _t(
+      'اليوم',
+      'Today',
+    );
+
+static String get monday =>
+    _t(
+      'الاثنين',
+      'Monday',
+    );
+
+static String get tuesday =>
+    _t(
+      'الثلاثاء',
+      'Tuesday',
+    );
+
+static String get wednesday =>
+    _t(
+      'الأربعاء',
+      'Wednesday',
+    );
+
+static String get thursday =>
+    _t(
+      'الخميس',
+      'Thursday',
+    );
+
+static String get friday =>
+    _t(
+      'الجمعة',
+      'Friday',
+    );
+
+static String get saturday =>
+    _t(
+      'السبت',
+      'Saturday',
+    );
+
+static String get sunday =>
+    _t(
+      'الأحد',
+      'Sunday',
+    );
+
+static String get january =>
+    _t(
+      'يناير',
+      'January',
+    );
+
+static String get february =>
+    _t(
+      'فبراير',
+      'February',
+    );
+
+static String get march =>
+    _t(
+      'مارس',
+      'March',
+    );
+
+static String get april =>
+    _t(
+      'أبريل',
+      'April',
+    );
+
+static String get may =>
+    _t(
+      'مايو',
+      'May',
+    );
+
+static String get june =>
+    _t(
+      'يونيو',
+      'June',
+    );
+
+static String get july =>
+    _t(
+      'يوليو',
+      'July',
+    );
+
+static String get august =>
+    _t(
+      'أغسطس',
+      'August',
+    );
+
+static String get september =>
+    _t(
+      'سبتمبر',
+      'September',
+    );
+
+static String get october =>
+    _t(
+      'أكتوبر',
+      'October',
+    );
+
+static String get november =>
+    _t(
+      'نوفمبر',
+      'November',
+    );
+
+static String get december =>
+    _t(
+      'ديسمبر',
+      'December',
+    );
   // =========================================================
   // تحويل اسم الفئة إلى اللغة الحالية
   // =========================================================
@@ -1197,6 +1399,9 @@ class AppStrings {
 
       default:
         return category;
+
+
+        
     }
   }
 }

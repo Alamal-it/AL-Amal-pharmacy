@@ -10,6 +10,7 @@ enum PaymentChoice {
   applePay,
   cashOnDelivery,
   tamara,
+  tabby,
   wallet,
 }
 
@@ -41,7 +42,10 @@ class PaymentMethodScreen extends StatefulWidget {
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   PaymentChoice selected = PaymentChoice.mada;
 
-  // ===== خيارات الدفع =====
+  // =========================================================
+  // خيارات الدفع
+  // =========================================================
+
   final List<_PaymentOption> options = const [
     _PaymentOption(
       choice: PaymentChoice.mada,
@@ -72,6 +76,12 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       label: 'تمارا  ',
       assetPath: 'lib/assets/tamara_icon.png',
       fallbackIcon: Icons.calendar_month_outlined,
+    ),
+    _PaymentOption(
+      choice: PaymentChoice.tabby,
+      label: 'تابي',
+      assetPath: 'lib/assets/tabby_icon.png',
+      fallbackIcon: Icons.calendar_today_outlined,
     ),
     _PaymentOption(
       choice: PaymentChoice.wallet,

@@ -1,8 +1,6 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
 import '../core/app_colors.dart';
 import '../widgets/checkout_stepper.dart';
 import '../main_nav/main_nav_screen.dart';
@@ -30,7 +28,7 @@ class OrderConfirmationScreen extends StatefulWidget {
     this.timeSlot,
     this.destinationLat,
     this.destinationLng,
-  });
+  }); 
 
   @override
   State<OrderConfirmationScreen> createState() =>

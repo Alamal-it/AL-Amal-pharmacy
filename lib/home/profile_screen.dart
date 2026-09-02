@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import '../core/app_colors.dart';
 import '../core/app_strings.dart';
 import '../services/user_service.dart';
@@ -29,6 +33,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String selectedCountry = AppStrings.saudiArabia;
+
+  // مسار ملف شهادة ضريبة القيمة المضافة داخل assets
+  static const String _vatCertificateAssetPath =
+      'lib/assets/docs/vat_certificate.pdf';
 
   // =========================
   // تأكيد تسجيل الخروج
@@ -338,132 +346,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // =========================
-  // المعلومات الضريبية
+  // فتح ملف شهادة ضريبة القيمة المضافة (PDF)
   // =========================
-  void _showTaxInfo(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(20),
+  Future<void> _openVatCertificate(BuildContext context) async {
+    try {
+      final byteData = await rootBundle.load(_vatCertificateAssetPath);
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/vat_certificate.pdf');
+      await file.writeAsBytes(
+        byteData.buffer.asUint8List(
+          byteData.offsetInBytes,
+          byteData.lengthInBytes,
         ),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+      );
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.verified_outlined,
-                    color: AppColors.green,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    AppStrings.vatCertificate,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryDark,
-                    ),
-                  ),
-                ],
-              ),
+      final result = await OpenFilex.open(file.path);
 
-              const SizedBox(height: 18),
-
-              _taxInfoRow(
-                'الاسم التجاري',
-                'صيدلية الأمل للأدوية',
-              ),
-
-              _taxInfoRow(
-                'الاسم النظامي',
-                'شركة الأمل المتقدمة الطبية',
-              ),
-
-              _taxInfoRow(
-                'الرقم الضريبي',
-                '310526667300003',
-              ),
-
-              _taxInfoRow(
-                'رقم الشهادة',
-                '100261178410787',
-              ),
-
-              _taxInfoRow(
-                'تاريخ نفاذ التسجيل',
-                '2020/07/20',
-              ),
-
-              const SizedBox(height: 12),
-
-              const Text(
-                'شهادة تسجيل ضريبة القيمة المضافة صادرة من هيئة الزكاة والضريبة والجمارك — المملكة العربية السعودية',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textGray,
-                  height: 1.6,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-            ],
-          ),
+      if (result.type != ResultType.done && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الملف، حاول مرة أخرى')),
         );
-      },
-    );
-  }
-
-  Widget _taxInfoRow(
-    String label,
-    String value,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.left,
-              style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textGray,
-            ),
-          ),
-        ],
-      ),
-    );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ أثناء فتح الشهادة')),
+        );
+      }
+    }
   }
 
   // =========================
@@ -851,55 +761,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           // =========================
           // الشهادة الضريبية
+          // الضغط عليها الآن يفتح ملف PDF الشهادة الحقيقي
+          // بدل عرض تفاصيل نصية
           // =========================
 
           InkWell(
-            onTap: () => _showTaxInfo(context),
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppColors.border,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.verified_outlined,
-                        color: AppColors.green,
-                        size: 18,
-                      ),
-
-                      const SizedBox(width: 6),
-
-                      Text(
-                        AppStrings.vatCertificate,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    AppStrings.tapForDetails,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      color: AppColors.textGray,
-                    ),
-                  ),
-                ],
-              ),
+            onTap: () => _openVatCertificate(context),
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              // شعار شهادة ضريبة القيمة المضافة
+              // ضعي صورة الشعار داخل: lib/assets/vat_badge.png
+              'lib/assets/vat_badge.png',
+              height: 48,
+              errorBuilder: (context, error, stackTrace) {
+                // لو الصورة ما لقيت، يرجع للأيقونة الافتراضية بدل ما يكسر الشاشة
+                return const Icon(
+                  Icons.verified,
+                  color: AppColors.green,
+                  size: 40,
+                );
+              },
             ),
           ),
 

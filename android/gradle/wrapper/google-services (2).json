@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "674471536194",
+    "project_id": "alamal-pharmacy-dedb1",
+    "storage_bucket": "alamal-pharmacy-dedb1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:674471536194:android:d47f6062f42d44323eafdb",
+        "android_client_info": {
+          "package_name": "com.example.pharmacy_alamal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "674471536194-h0ml9snc7qncucjoj1m4pm3c8bdtvbh0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pharmacy_alamal",
+            "certificate_hash": "a40b8649efc2d2b3c23395434e4192114bd44b1f"
+          }
+        },
+        {
+          "client_id": "674471536194-pefh07cnq060fthlk131o3467ilppfir.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcgRf1ycx1Ze101Y7mrrBgtj_8ZuM_NCU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "674471536194-pefh07cnq060fthlk131o3467ilppfir.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "674471536194-mn5aagot44uom5dbnmm4rng2eie3qmce.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.pharmacyAlamal"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../core/app_colors.dart';
 import '../core/app_strings.dart';
 import '../models/product.dart';
@@ -42,6 +43,10 @@ class _HomeScreenState extends State<HomeScreen> {
   DeliveryMode? deliveryMode;
   DeliveryAddress? selectedAddress;
 
+  // ============================================================
+  // البنرات
+  // ============================================================
+
   final List<PromoBanner> banners = const [
     PromoBanner(
       title: 'خصم 20%',
@@ -50,12 +55,26 @@ class _HomeScreenState extends State<HomeScreen> {
       color: AppColors.primary,
       icon: Icons.local_offer_outlined,
     ),
+
     PromoBanner(
       title: 'توصيل مجاني',
       subtitle: 'لطلبات أكثر من 100 ريال',
       buttonText: 'اطلبي الآن',
       color: AppColors.green,
       icon: Icons.local_shipping_outlined,
+    ),
+
+    // ==========================================================
+    // بنر وصفتي
+    // ==========================================================
+
+    PromoBanner(
+      title: '',
+      subtitle: '',
+      buttonText: '',
+      color: AppColors.primary,
+      icon: Icons.receipt_long_outlined,
+      imagePath: 'lib/assets/wasfaty_banner.png',
     ),
   ];
 
@@ -80,11 +99,19 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // ============================================================
+  // تحديث المنتجات
+  // ============================================================
+
   Future<void> refreshProducts() async {
     setState(() {
       productsFuture = productService.getProducts();
     });
   }
+
+  // ============================================================
+  // تسجيل الدخول
+  // ============================================================
 
   void goToLogin() {
     Navigator.pushAndRemoveUntil(
@@ -95,6 +122,10 @@ class _HomeScreenState extends State<HomeScreen> {
       (route) => false,
     );
   }
+
+  // ============================================================
+  // خيارات التوصيل
+  // ============================================================
 
   Future<void> openDeliveryOptions() async {
     final result = await DeliveryOptionSheet.show(context);
@@ -107,6 +138,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ============================================================
+  // الانتقال للتصنيفات
+  // ============================================================
+
   void goToCategories() {
     Navigator.push(
       context,
@@ -115,6 +150,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // ============================================================
+  // الانتقال لتصنيف معين
+  // ============================================================
 
   void goToCategory(String categoryName) {
     String actualCategory;
@@ -186,6 +225,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============================================================
+  // البحث
+  // ============================================================
+
   List<Product> filterProducts(List<Product> allProducts) {
     if (searchQuery.isEmpty) {
       return allProducts;
@@ -202,6 +245,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
+  // ============================================================
+  // توحيد البحث العربي
+  // ============================================================
+
   String normalizeArabic(String text) {
     return text
         .toLowerCase()
@@ -216,6 +263,10 @@ class _HomeScreenState extends State<HomeScreen> {
         .trim();
   }
 
+  // ============================================================
+  // مسح البحث
+  // ============================================================
+
   void clearSearch() {
     searchController.clear();
 
@@ -224,21 +275,50 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // ============================================================
+  // فتح صفحة وصفتي
+  // ============================================================
+
+  void openPrescription() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const UploadPrescriptionScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // ملاحظة: ما نثبت اتجاه الشاشة هنا. الاتجاه (RTL/LTR) يتحدد تلقائيًا
-    // من MaterialApp بالأعلى حسب اللغة المختارة (شوفي main.dart).
+    // ملاحظة:
+    // ما نثبت اتجاه الشاشة هنا.
+    // الاتجاه RTL/LTR يتحدد تلقائيًا من MaterialApp
+    // حسب اللغة المختارة.
+
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: refreshProducts,
         child: CustomScrollView(
           slivers: [
+            // ======================================================
+            // الهيدر
+            // ======================================================
+
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 30, 16, 0),
+              padding: const EdgeInsets.fromLTRB(
+                16,
+                30,
+                16,
+                0,
+              ),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ==================================================
+                    // الصف العلوي
+                    // ==================================================
+
                     Row(
                       children: [
                         widget.isGuest
@@ -246,20 +326,27 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: goToLogin,
                                 style: TextButton.styleFrom(
                                   backgroundColor:
-                                      AppColors.green.withOpacity(0.12),
-                                  padding: const EdgeInsets.symmetric(
+                                      AppColors.green.withOpacity(
+                                    0.12,
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(
                                     horizontal: 14,
                                     vertical: 8,
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                                  shape:
+                                      RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(20),
                                   ),
                                   minimumSize: Size.zero,
                                   tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
+                                      MaterialTapTargetSize
+                                          .shrinkWrap,
                                 ),
                                 child: Text(
-                                  AppStrings.loginOrCreateAccount,
+                                  AppStrings
+                                      .loginOrCreateAccount,
                                   style: const TextStyle(
                                     color: AppColors.green,
                                     fontSize: 12,
@@ -272,61 +359,91 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const NotificationsScreen(),
+                                      builder: (context) =>
+                                          const NotificationsScreen(),
                                     ),
                                   );
                                 },
                                 icon: const Icon(
                                   Icons.notifications_none,
-                                  color: AppColors.primaryDark,
+                                  color:
+                                      AppColors.primaryDark,
                                 ),
                               ),
+
+                        // ==================================================
+                        // عنوان التوصيل
+                        // ==================================================
+
                         Expanded(
                           child: InkWell(
                             onTap: openDeliveryOptions,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius:
+                                BorderRadius.circular(8),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.end,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.end,
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        deliveryMode == DeliveryMode.pickup
-                                            ? AppStrings.pickupFromPharmacy
-                                            : selectedAddress != null
-                                                ? AppStrings.deliverTo(
-                                                    selectedAddress!.label)
-                                                : AppStrings.deliverToHome,
+                                        deliveryMode ==
+                                                DeliveryMode.pickup
+                                            ? AppStrings
+                                                .pickupFromPharmacy
+                                            : selectedAddress !=
+                                                    null
+                                                ? AppStrings
+                                                    .deliverTo(
+                                                    selectedAddress!
+                                                        .label,
+                                                  )
+                                                : AppStrings
+                                                    .deliverToHome,
                                         style: const TextStyle(
-                                          color: AppColors.primaryDark,
+                                          color: AppColors
+                                              .primaryDark,
                                           fontSize: 12.5,
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight:
+                                              FontWeight.w700,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
+                                        overflow:
+                                            TextOverflow.ellipsis,
                                       ),
                                     ),
+
                                     const SizedBox(width: 4),
+
                                     const Icon(
-                                      Icons.keyboard_arrow_down,
+                                      Icons
+                                          .keyboard_arrow_down,
                                       size: 16,
-                                      color: AppColors.primaryDark,
+                                      color: AppColors
+                                          .primaryDark,
                                     ),
                                   ],
                                 ),
+
                                 Text(
-                                  deliveryMode == DeliveryMode.pickup
-                                      ? AppStrings.chooseNearestPharmacy
+                                  deliveryMode ==
+                                          DeliveryMode.pickup
+                                      ? AppStrings
+                                          .chooseNearestPharmacy
                                       : selectedAddress != null
                                           ? '${selectedAddress!.addressLine}, ${selectedAddress!.city}'
-                                          : AppStrings.defaultAddress,
+                                          : AppStrings
+                                              .defaultAddress,
                                   style: const TextStyle(
-                                    color: AppColors.textGray,
+                                    color:
+                                        AppColors.textGray,
                                     fontSize: 10,
                                   ),
                                   maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  overflow:
+                                      TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -334,18 +451,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 10),
+
+                    // ==================================================
+                    // البحث + التصنيفات + المفضلة
+                    // ==================================================
+
                     Row(
                       children: [
                         InkWell(
                           onTap: goToCategories,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius:
+                              BorderRadius.circular(10),
                           child: Container(
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
                               color: AppColors.green,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius:
+                                  BorderRadius.circular(10),
                             ),
                             alignment: Alignment.center,
                             child: const Icon(
@@ -355,261 +480,454 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
+
                         const SizedBox(width: 12),
+
                         Expanded(
                           child: Container(
                             height: 42,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            padding:
+                                const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.border),
+                              borderRadius:
+                                  BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.border,
+                              ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.search,
-                                    color: AppColors.textGray, size: 20),
+                                const Icon(
+                                  Icons.search,
+                                  color:
+                                      AppColors.textGray,
+                                  size: 20,
+                                ),
+
                                 const SizedBox(width: 8),
+
                                 Expanded(
                                   child: TextField(
-                                    controller: searchController,
-                                    textAlign: TextAlign.start,
-                                    textInputAction: TextInputAction.search,
-                                    decoration: InputDecoration(
+                                    controller:
+                                        searchController,
+                                    textAlign:
+                                        TextAlign.start,
+                                    textInputAction:
+                                        TextInputAction.search,
+                                    decoration:
+                                        InputDecoration(
                                       isCollapsed: true,
-                                      border: InputBorder.none,
-                                      hintText: AppStrings.searchHint,
-                                      hintStyle: const TextStyle(
-                                        color: AppColors.textGray,
+                                      border:
+                                          InputBorder.none,
+                                      hintText:
+                                          AppStrings
+                                              .searchHint,
+                                      hintStyle:
+                                          const TextStyle(
+                                        color:
+                                            AppColors.textGray,
                                         fontSize: 12,
                                       ),
                                     ),
-                                    style: const TextStyle(
-                                      color: AppColors.primaryDark,
+                                    style:
+                                        const TextStyle(
+                                      color: AppColors
+                                          .primaryDark,
                                       fontSize: 12,
                                     ),
                                   ),
                                 ),
+
                                 if (searchQuery.isNotEmpty)
                                   GestureDetector(
                                     onTap: clearSearch,
-                                    child: const Icon(Icons.close,
-                                        color: AppColors.textGray, size: 17),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color:
+                                          AppColors.textGray,
+                                      size: 17,
+                                    ),
                                   ),
                               ],
                             ),
                           ),
                         ),
+
                         const SizedBox(width: 8),
+
                         IconButton(
                           onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const FavoritesScreen(),
+                                builder: (_) =>
+                                    const FavoritesScreen(),
                               ),
                             );
                           },
-                          icon: const Icon(Icons.favorite_border,
-                              color: AppColors.primaryDark),
+                          icon: const Icon(
+                            Icons.favorite_border,
+                            color:
+                                AppColors.primaryDark,
+                          ),
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 14),
+
+                    // ==================================================
+                    // البنرات المتحركة
+                    // ==================================================
+
                     if (searchQuery.isEmpty) ...[
                       PromoBannerCarousel(
                         banners: banners,
-                        onTapButton: (banner) {},
+
+                        // الضغط على البنر كامل
+                        onTapBanner: (banner) {
+                          if (banner.imagePath ==
+                              'lib/assets/wasfaty_banner.png') {
+                            openPrescription();
+                          }
+                        },
+
+                        // الضغط على زر البنرات العادية
+                        onTapButton: (banner) {
+                          // نقدر نربط أزرار البنرات
+                          // الأخرى هنا لاحقًا.
+                        },
                       ),
+
                       const SizedBox(height: 18),
+
+                      // ==================================================
+                      // الاختصارات
+                      // ==================================================
+
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
                         children: [
                           CategoryIconItem(
-                            icon: Icons.receipt_long_outlined,
-                            label: AppStrings.myOrdersShort,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const OrdersScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          CategoryIconItem(
-                            icon: Icons.favorite_border,
-                            label: AppStrings.healthCare,
-                            onTap: () {
-                              goToCategory('العناية الصحية');
-                            },
-                          ),
-                          CategoryIconItem(
-                            icon: Icons.medical_services_outlined,
-                            label: AppStrings.medicalDevices,
-                            onTap: () {
-                              goToCategory('أجهزة طبية');
-                            },
-                          ),
-                          CategoryIconItem(
-                            icon: Icons.camera_alt_outlined,
-                            label: AppStrings.uploadPrescription,
+                            icon: Icons
+                                .receipt_long_outlined,
+                            label:
+                                AppStrings.myOrdersShort,
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) =>
-                                      const UploadPrescriptionScreen(),
+                                      const OrdersScreen(),
                                 ),
                               );
                             },
                           ),
+
+                          CategoryIconItem(
+                            icon:
+                                Icons.favorite_border,
+                            label:
+                                AppStrings.healthCare,
+                            onTap: () {
+                              goToCategory(
+                                'العناية الصحية',
+                              );
+                            },
+                          ),
+
+                          CategoryIconItem(
+                            icon: Icons
+                                .medical_services_outlined,
+                            label:
+                                AppStrings.medicalDevices,
+                            onTap: () {
+                              goToCategory(
+                                'أجهزة طبية',
+                              );
+                            },
+                          ),
+
+                          CategoryIconItem(
+                            icon: Icons
+                                .camera_alt_outlined,
+                            label: AppStrings
+                                .uploadPrescription,
+                            onTap: openPrescription,
+                          ),
                         ],
                       ),
+
                       const SizedBox(height: 20),
+
+                      // ==================================================
+                      // تصفح حسب التصنيف
+                      // ==================================================
+
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             AppStrings.shopByCategory,
                             style: const TextStyle(
-                              color: AppColors.primaryDark,
+                              color:
+                                  AppColors.primaryDark,
                               fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                              fontWeight:
+                                  FontWeight.w700,
                             ),
                           ),
+
                           TextButton(
                             onPressed: goToCategories,
                             child: Text(
                               AppStrings.viewAll,
-                              style: const TextStyle(
-                                color: AppColors.primary,
+                              style:
+                                  const TextStyle(
+                                color:
+                                    AppColors.primary,
                                 fontSize: 11.5,
                               ),
                             ),
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 10),
+
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
                         children: [
                           CategoryIconItem(
-                            icon: Icons.child_care_outlined,
+                            icon:
+                                Icons.child_care_outlined,
                             label: AppStrings.kids,
                             onTap: () {
-                              goToCategory('الأطفال');
+                              goToCategory(
+                                'الأطفال',
+                              );
                             },
                           ),
+
                           CategoryIconItem(
-                            icon: Icons.water_drop_outlined,
-                            label: AppStrings.skinCare,
+                            icon:
+                                Icons.water_drop_outlined,
+                            label:
+                                AppStrings.skinCare,
                             onTap: () {
-                              goToCategory('العناية بالبشرة');
+                              goToCategory(
+                                'العناية بالبشرة',
+                              );
                             },
                           ),
+
                           CategoryIconItem(
-                            icon: Icons.add_circle_outline,
-                            label: AppStrings.vitamins,
+                            icon:
+                                Icons.add_circle_outline,
+                            label:
+                                AppStrings.vitamins,
                             onTap: () {
-                              goToCategory('الفيتامينات');
+                              goToCategory(
+                                'الفيتامينات',
+                              );
                             },
                           ),
+
                           CategoryIconItem(
-                            icon: Icons.medication_outlined,
-                            label: AppStrings.medicines,
+                            icon:
+                                Icons.medication_outlined,
+                            label:
+                                AppStrings.medicines,
                             onTap: () {
-                              goToCategory('الأدوية');
+                              goToCategory(
+                                'الأدوية',
+                              );
                             },
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 22),
                     ],
                   ],
                 ),
               ),
             ),
+
+            // ==========================================================
+            // العروض / نتائج البحث
+            // ==========================================================
+
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 16,
+                ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       searchQuery.isEmpty
                           ? AppStrings.endingSoonOffers
                           : AppStrings.searchResults,
                       style: const TextStyle(
-                        color: AppColors.primaryDark,
+                        color:
+                            AppColors.primaryDark,
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontWeight:
+                            FontWeight.w700,
                       ),
                     ),
+
                     if (searchQuery.isEmpty)
                       const CountdownTimer(
-                        duration: Duration(hours: 2, minutes: 14, seconds: 9),
+                        duration: Duration(
+                          hours: 2,
+                          minutes: 14,
+                          seconds: 9,
+                        ),
                       ),
                   ],
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 10),
+            ),
+
+            // ==========================================================
+            // المنتجات
+            // ==========================================================
+
             SliverToBoxAdapter(
               child: SizedBox(
                 height: 190,
                 child: FutureBuilder<List<Product>>(
                   future: productsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                  builder:
+                      (context, snapshot) {
+                    // ==================================================
+                    // تحميل
+                    // ==================================================
+
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
                       return const Center(
                         child:
-                            CircularProgressIndicator(color: AppColors.primary),
-                      );
-                    }
-
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Text(
-                          AppStrings.errorLoadingProducts,
-                          style: const TextStyle(color: AppColors.textGray),
+                            CircularProgressIndicator(
+                          color:
+                              AppColors.primary,
                         ),
                       );
                     }
 
-                    final allProducts = snapshot.data ?? [];
-                    final products = filterProducts(allProducts);
+                    // ==================================================
+                    // خطأ
+                    // ==================================================
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          AppStrings
+                              .errorLoadingProducts,
+                          style:
+                              const TextStyle(
+                            color:
+                                AppColors.textGray,
+                          ),
+                        ),
+                      );
+                    }
+
+                    // ==================================================
+                    // المنتجات
+                    // ==================================================
+
+                    final allProducts =
+                        snapshot.data ?? [];
+
+                    final products =
+                        filterProducts(
+                      allProducts,
+                    );
+
+                    // ==================================================
+                    // لا توجد منتجات
+                    // ==================================================
 
                     if (products.isEmpty) {
                       return Center(
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.search_off_rounded,
-                                size: 40, color: AppColors.textGray),
-                            const SizedBox(height: 8),
+                            const Icon(
+                              Icons
+                                  .search_off_rounded,
+                              size: 40,
+                              color:
+                                  AppColors.textGray,
+                            ),
+
+                            const SizedBox(
+                              height: 8,
+                            ),
+
                             Text(
                               searchQuery.isEmpty
-                                  ? AppStrings.noOffersNow
-                                  : AppStrings.noProductsFound,
-                              style: const TextStyle(
-                                  color: AppColors.textGray, fontSize: 13),
+                                  ? AppStrings
+                                      .noOffersNow
+                                  : AppStrings
+                                      .noProductsFound,
+                              style:
+                                  const TextStyle(
+                                color:
+                                    AppColors
+                                        .textGray,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
                       );
                     }
 
+                    // ==================================================
+                    // عرض المنتجات أفقيًا
+                    // ==================================================
+
                     return ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
+                      scrollDirection:
+                          Axis.horizontal,
+                      padding:
+                          const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      physics:
+                          const BouncingScrollPhysics(),
+                      itemCount:
+                          products.length,
+                      itemBuilder:
+                          (context, index) {
                         return Padding(
                           padding:
-                              const EdgeInsetsDirectional.only(start: 10),
-                          child: DealCard(product: products[index]),
+                              const EdgeInsetsDirectional
+                                  .only(
+                            start: 10,
+                          ),
+                          child: DealCard(
+                            product:
+                                products[index],
+                          ),
                         );
                       },
                     );
@@ -617,7 +935,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 20),
+            ),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../core/app_strings.dart';
 import 'create_account_screen.dart';
@@ -24,8 +25,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController phoneController =
       TextEditingController();
 
-  final TextEditingController passwordController =
-      TextEditingController();
+  // ============================================================
+  // Firebase Authentication
+  // ============================================================
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  String? _verificationId;
 
   // ============================================================
   // Google Sign-In
@@ -39,27 +45,21 @@ class _LoginScreenState extends State<LoginScreen> {
   // حالة الصفحة
   // ============================================================
 
-  bool obscurePassword = true;
   bool loading = false;
 
   // ============================================================
   // Web Client ID
   // ============================================================
-  //
-  // ضعي هنا Web Client ID الذي أنشأتيه في Google Cloud.
-  //
-  // مثال:
-  // 123456789-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
-  //
-  // لا تضعي Android Client ID هنا.
-  //
-  static const String webClientId =
-      '560062857783-v7jh7ra995cihidh8u30nfntl747grr2.apps.googleusercontent.com';
+static const String webClientId =
+    '674471536194-pefh07cnq060fthlk131o3467ilppfir.apps.googleusercontent.com';
+
+  // ============================================================
+  // Dispose
+  // ============================================================
 
   @override
   void dispose() {
     phoneController.dispose();
-    passwordController.dispose();
     super.dispose();
   }
 
@@ -80,7 +80,35 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ============================================================
-  // تسجيل الدخول العادي
+  // تحويل رقم الجوال السعودي
+  // ============================================================
+
+  String _formatSaudiPhone(String phone) {
+    String value = phone.trim();
+
+    value = value.replaceAll(' ', '');
+
+    if (value.startsWith('+966')) {
+      return value;
+    }
+
+    if (value.startsWith('00966')) {
+      return '+${value.substring(2)}';
+    }
+
+    if (value.startsWith('05') && value.length == 10) {
+      return '+966${value.substring(1)}';
+    }
+
+    if (value.startsWith('5') && value.length == 9) {
+      return '+966$value';
+    }
+
+    return value;
+  }
+
+  // ============================================================
+  // تسجيل الدخول بواسطة Firebase OTP
   // ============================================================
 
   Future<void> login() async {
@@ -90,34 +118,510 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    final String phone = _formatSaudiPhone(
+      phoneController.text,
+    );
+
     setState(() {
       loading = true;
     });
 
-    // ============================================================
-    // مؤقت إلى أن يتم ربط API الحقيقي
-    // ============================================================
+    debugPrint('====================================');
+    debugPrint('Firebase Phone Login');
+    debugPrint('Phone: $phone');
+    debugPrint('====================================');
 
-    await Future.delayed(
-      const Duration(milliseconds: 300),
-    );
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phone,
 
+        // ======================================================
+        // التحقق التلقائي
+        // ======================================================
+
+        verificationCompleted:
+            (PhoneAuthCredential credential) async {
+          try {
+            await _auth.signInWithCredential(
+              credential,
+            );
+
+            if (!mounted) {
+              return;
+            }
+
+            UserService.instance.isLoggedIn = true;
+            UserService.instance.phone = phone;
+
+            setState(() {
+              loading = false;
+            });
+
+            _goToMainScreen();
+          } on FirebaseAuthException catch (e) {
+            if (!mounted) {
+              return;
+            }
+
+            setState(() {
+              loading = false;
+            });
+
+            _showFirebaseError(e);
+          }
+        },
+
+        // ======================================================
+        // فشل Firebase
+        // ======================================================
+
+        verificationFailed:
+            (FirebaseAuthException e) {
+          debugPrint('Firebase Phone Auth Error');
+          debugPrint('Code: ${e.code}');
+          debugPrint('Message: ${e.message}');
+
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            loading = false;
+          });
+
+          _showFirebaseError(e);
+        },
+
+        // ======================================================
+        // تم إرسال OTP
+        // ======================================================
+
+        codeSent: (
+          String verificationId,
+          int? resendToken,
+        ) {
+          _verificationId = verificationId;
+
+          debugPrint('OTP تم إرساله بنجاح');
+
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            loading = false;
+          });
+
+          _showOtpDialog(phone);
+        },
+
+        // ======================================================
+        // انتهاء الوقت
+        // ======================================================
+
+        codeAutoRetrievalTimeout:
+            (String verificationId) {
+          _verificationId = verificationId;
+        },
+
+        timeout: const Duration(
+          seconds: 60,
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Firebase Error: ${e.code}');
+      debugPrint('Message: ${e.message}');
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loading = false;
+      });
+
+      _showFirebaseError(e);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'حدث خطأ غير متوقع:\n$e',
+          ),
+        ),
+      );
+    }
+  }
+
+  // ============================================================
+  // التحقق من OTP
+  // ============================================================
+
+  Future<void> _verifyOtp(
+    String otp,
+    String phone,
+    BuildContext dialogContext,
+  ) async {
+    if (_verificationId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'لم يتم العثور على جلسة التحقق، حاولي إرسال الرمز مرة أخرى.',
+            ),
+          ),
+        );
+      }
+
+      return;
+    }
+
+    try {
+      setState(() {
+        loading = true;
+      });
+
+      final PhoneAuthCredential credential =
+          PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: otp,
+      );
+
+      await _auth.signInWithCredential(
+        credential,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      UserService.instance.isLoggedIn = true;
+      UserService.instance.phone = phone;
+
+      setState(() {
+        loading = false;
+      });
+
+      Navigator.of(dialogContext).pop();
+
+      _goToMainScreen();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loading = false;
+      });
+
+      String message;
+
+      switch (e.code) {
+        case 'invalid-verification-code':
+          message = 'رمز التحقق غير صحيح.';
+          break;
+
+        case 'session-expired':
+          message =
+              'انتهت صلاحية رمز التحقق. أرسلي رمزًا جديدًا.';
+          break;
+
+        case 'too-many-requests':
+          message =
+              'تم إجراء محاولات كثيرة. حاولي مرة أخرى لاحقًا.';
+          break;
+
+        default:
+          message =
+              'Firebase: ${e.code}\n'
+              '${e.message ?? ''}';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(
+            seconds: 6,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'حدث خطأ أثناء التحقق:\n$e',
+          ),
+        ),
+      );
+    }
+  }
+
+  // ============================================================
+  // نافذة OTP
+  // ============================================================
+
+  void _showOtpDialog(String phone) {
+    final TextEditingController otpController =
+        TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          title: const Text(
+            'رمز التحقق',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xff123B72),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'تم إرسال رمز التحقق إلى رقم الجوال',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xff7D8CA3),
+                  fontSize: 12,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                phone,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xff0E4595),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              TextField(
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                maxLength: 6,
+                textAlign: TextAlign.center,
+                autofocus: true,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xff123B72),
+                  letterSpacing: 4,
+                ),
+                decoration: InputDecoration(
+                  hintText: '000000',
+                  counterText: '',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Color(0xffDDE5EF),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Color(0xffDDE5EF),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Color(0xff0E4595),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: loading
+                  ? null
+                  : () {
+                      Navigator.of(dialogContext).pop();
+                    },
+              child: const Text(
+                'إلغاء',
+                style: TextStyle(
+                  color: Color(0xff7D8CA3),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            SizedBox(
+              width: 100,
+              height: 40,
+              child: ElevatedButton(
+                onPressed: loading
+                    ? null
+                    : () async {
+                        final String otp =
+                            otpController.text.trim();
+
+                        if (otp.length != 6) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'أدخل رمز التحقق المكون من 6 أرقام',
+                              ),
+                            ),
+                          );
+
+                          return;
+                        }
+
+                        await _verifyOtp(
+                          otp,
+                          phone,
+                          dialogContext,
+                        );
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      const Color(0xff2EAD59),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                ),
+                child: loading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : const Text(
+                        'تحقق',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      otpController.dispose();
+    });
+  }
+
+  // ============================================================
+  // أخطاء Firebase
+  // ============================================================
+
+  void _showFirebaseError(
+    FirebaseAuthException e,
+  ) {
     if (!mounted) {
       return;
     }
 
-    UserService.instance.isLoggedIn = true;
+    String message;
 
-    UserService.instance.phone =
-        phoneController.text.trim();
+    switch (e.code) {
+      case 'invalid-phone-number':
+        message = 'رقم الجوال غير صحيح.';
+        break;
 
-    setState(() {
-      loading = false;
-    });
+      case 'too-many-requests':
+        message =
+            'تم إجراء محاولات كثيرة. حاولي مرة أخرى لاحقًا.';
+        break;
 
-    // ============================================================
-    // الانتقال بعد تسجيل الدخول
-    // ============================================================
+      case 'quota-exceeded':
+        message =
+            'تم تجاوز الحد المسموح لإرسال الرسائل.';
+        break;
+
+      case 'operation-not-allowed':
+        message =
+            'تسجيل الدخول برقم الجوال غير مفعّل في Firebase.';
+        break;
+
+      case 'app-not-authorized':
+        message =
+            'التطبيق غير مصرح له باستخدام Firebase Phone Authentication.\n'
+            'تأكدي من SHA-1 و SHA-256 و Package Name.';
+        break;
+
+      case 'captcha-check-failed':
+        message =
+            'فشل التحقق الأمني من Firebase. حاولي مرة أخرى.';
+        break;
+
+      case 'network-request-failed':
+        message =
+            'تأكدي من اتصال الإنترنت ثم حاولي مرة أخرى.';
+        break;
+
+      default:
+        message =
+            'Firebase: ${e.code}\n'
+            '${e.message ?? ''}';
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(
+          seconds: 8,
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // الانتقال للرئيسية
+  // ============================================================
+
+  void _goToMainScreen() {
+    if (!mounted) {
+      return;
+    }
 
     if (widget.fromCheckout) {
       Navigator.pop(context, true);
@@ -133,7 +637,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ============================================================
-  // تسجيل الدخول بواسطة Google
+  // Google
   // ============================================================
 
   Future<void> loginWithGoogle() async {
@@ -146,47 +650,86 @@ class _LoginScreenState extends State<LoginScreen> {
         loading = true;
       });
 
-      // تهيئة Google مرة واحدة
+      // تهيئة Google
       await initializeGoogleSignIn();
 
-      // فتح شاشة Google
+      // فتح حسابات Google
       final GoogleSignInAccount account =
           await _googleSignIn.authenticate();
+
+      // ========================================================
+      // الحصول على Google Authentication
+      // ========================================================
+
+      final GoogleSignInAuthentication googleAuth =
+          account.authentication;
+
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception(
+          'لم يتم الحصول على Google ID Token',
+        );
+      }
+
+      debugPrint(
+        'Google ID Token received successfully',
+      );
+
+      // ========================================================
+      // إنشاء Firebase Credential
+      // ========================================================
+
+      final OAuthCredential credential =
+          GoogleAuthProvider.credential(
+        idToken: idToken,
+      );
+
+      // ========================================================
+      // تسجيل الدخول الفعلي في Firebase
+      // ========================================================
+
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(
+        credential,
+      );
+
+      final User? user = userCredential.user;
+
+      if (user == null) {
+        throw Exception(
+          'لم يتم إنشاء مستخدم في Firebase',
+        );
+      }
+
+      debugPrint('====================================');
+      debugPrint('Google Firebase Login SUCCESS');
+      debugPrint('UID: ${user.uid}');
+      debugPrint('Name: ${user.displayName}');
+      debugPrint('Email: ${user.email}');
+      debugPrint('====================================');
 
       if (!mounted) {
         return;
       }
 
-      // ==========================================================
-      // معلومات حساب Google
-      // ==========================================================
-
-      final String googleEmail = account.email;
-      final String googleName =
-          account.displayName ?? '';
-
-      // ==========================================================
-      // مؤقتًا نعتبر المستخدم مسجل الدخول
-      //
-      // لاحقًا هنا نرسل Google ID Token / بيانات الدخول
-      // إلى Backend الخاص بك (Oracle API).
-      // ==========================================================
+      // ========================================================
+      // حفظ حالة الدخول داخل التطبيق
+      // ========================================================
 
       UserService.instance.isLoggedIn = true;
 
-      UserService.instance.phone = googleEmail;
-
-      // ==========================================================
-      // إزالة Loading
-      // ==========================================================
+      // حاليًا UserService عندك يستخدم phone
+      // لذلك نضع البريد مؤقتًا هنا
+      UserService.instance.phone = user.email ?? '';
 
       setState(() {
         loading = false;
       });
 
-      // ==========================================================
-      // الانتقال بعد تسجيل الدخول
-      // ==========================================================
+      // ========================================================
+      // الانتقال
+      // ========================================================
 
       if (widget.fromCheckout) {
         Navigator.pop(context, true);
@@ -199,11 +742,6 @@ class _LoginScreenState extends State<LoginScreen> {
           (route) => false,
         );
       }
-
-      // منع تحذير المتغير غير المستخدم
-      debugPrint(
-        'Google Login: $googleName - $googleEmail',
-      );
     } on GoogleSignInException catch (e) {
       if (!mounted) {
         return;
@@ -226,7 +764,36 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       debugPrint(
-        'Google Sign-In Description: ${e.description}',
+        'Google Sign-In Description: '
+        '${e.description}',
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loading = false;
+      });
+
+      debugPrint(
+        'Firebase Google Auth Error: ${e.code}',
+      );
+
+      debugPrint(
+        'Firebase Google Auth Message: ${e.message}',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'خطأ في Firebase:\n'
+            '${e.message ?? e.code}',
+          ),
+          duration: const Duration(
+            seconds: 7,
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) {
@@ -240,7 +807,10 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'حدث خطأ أثناء تسجيل الدخول عبر Google: $e',
+            'حدث خطأ أثناء تسجيل الدخول عبر Google:\n$e',
+          ),
+          duration: const Duration(
+            seconds: 7,
           ),
         ),
       );
@@ -252,7 +822,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ============================================================
-  // رسائل أخطاء Google
+  // أخطاء Google
   // ============================================================
 
   String _googleErrorMessage(
@@ -262,10 +832,12 @@ class _LoginScreenState extends State<LoginScreen> {
       case GoogleSignInExceptionCode.canceled:
         return 'تم إلغاء تسجيل الدخول عبر Google.';
 
-      case GoogleSignInExceptionCode.clientConfigurationError:
+      case GoogleSignInExceptionCode
+          .clientConfigurationError:
         return 'إعدادات Google غير صحيحة. تأكدي من Package Name و SHA-1 و Web Client ID.';
 
-      case GoogleSignInExceptionCode.providerConfigurationError:
+      case GoogleSignInExceptionCode
+          .providerConfigurationError:
         return 'خدمة Google غير متاحة أو إعداداتها غير صحيحة.';
 
       case GoogleSignInExceptionCode.uiUnavailable:
@@ -368,10 +940,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   .onUserInteraction,
                           child: Column(
                             mainAxisAlignment:
-                                MainAxisAlignment
-                                    .center,
+                                MainAxisAlignment.center,
                             children: [
-
                               // ==================================================
                               // زر الرجوع
                               // ==================================================
@@ -379,10 +949,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (widget.fromCheckout)
                                 Align(
                                   alignment: isArabic
-                                      ? Alignment
-                                          .centerRight
-                                      : Alignment
-                                          .centerLeft,
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
                                   child: IconButton(
                                     onPressed: () {
                                       Navigator.pop(
@@ -392,12 +960,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     },
                                     icon: Icon(
                                       isArabic
-                                          ? Icons
-                                              .arrow_forward
-                                          : Icons
-                                              .arrow_back,
-                                      color:
-                                          const Color(
+                                          ? Icons.arrow_forward
+                                          : Icons.arrow_back,
+                                      color: const Color(
                                         0xff0E4595,
                                       ),
                                     ),
@@ -424,8 +989,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       Icons
                                           .local_pharmacy_outlined,
                                       size: 70,
-                                      color:
-                                          Color(
+                                      color: Color(
                                         0xff0E4595,
                                       ),
                                     );
@@ -445,12 +1009,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? AppStrings
                                         .loginToCompleteOrder
                                     : AppStrings.loginTitle,
-                                textAlign:
-                                    TextAlign.center,
-                                style:
-                                    const TextStyle(
-                                  color:
-                                      Color(
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Color(
                                     0xff123B72,
                                   ),
                                   fontSize: 19,
@@ -471,14 +1032,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 widget.fromCheckout
                                     ? AppStrings
                                         .loginToContinueOrder
-                                    : AppStrings
-                                        .loginSubtitle,
-                                textAlign:
-                                    TextAlign.center,
-                                style:
-                                    const TextStyle(
-                                  color:
-                                      Color(
+                                    : AppStrings.loginSubtitle,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Color(
                                     0xff7D8CA3,
                                   ),
                                   fontSize: 11.5,
@@ -499,29 +1056,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                 keyboardType:
                                     TextInputType.phone,
                                 textInputAction:
-                                    TextInputAction.next,
+                                    TextInputAction.done,
                                 textAlign: isArabic
                                     ? TextAlign.right
                                     : TextAlign.left,
                                 textDirection: isArabic
                                     ? TextDirection.rtl
                                     : TextDirection.ltr,
-                                autofillHints:
-                                    const [
+                                autofillHints: const [
                                   AutofillHints
                                       .telephoneNumber,
                                 ],
+                                onFieldSubmitted: (_) =>
+                                    login(),
                                 decoration:
                                     InputDecoration(
-                                  hintText:
-                                      AppStrings
-                                          .phoneNumber,
+                                  hintText: AppStrings
+                                      .phoneNumber,
                                   prefixIcon:
                                       const Icon(
-                                    Icons
-                                        .phone_outlined,
-                                    color:
-                                        Color(
+                                    Icons.phone_outlined,
+                                    color: Color(
                                       0xff0E4595,
                                     ),
                                   ),
@@ -532,13 +1087,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       OutlineInputBorder(
                                     borderRadius:
                                         BorderRadius
-                                            .circular(
-                                      8,
-                                    ),
+                                            .circular(8),
                                     borderSide:
                                         const BorderSide(
-                                      color:
-                                          Color(
+                                      color: Color(
                                         0xffDDE5EF,
                                       ),
                                     ),
@@ -547,13 +1099,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       OutlineInputBorder(
                                     borderRadius:
                                         BorderRadius
-                                            .circular(
-                                      8,
-                                    ),
+                                            .circular(8),
                                     borderSide:
                                         const BorderSide(
-                                      color:
-                                          Color(
+                                      color: Color(
                                         0xffDDE5EF,
                                       ),
                                     ),
@@ -562,13 +1111,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       OutlineInputBorder(
                                     borderRadius:
                                         BorderRadius
-                                            .circular(
-                                      8,
-                                    ),
+                                            .circular(8),
                                     borderSide:
                                         const BorderSide(
-                                      color:
-                                          Color(
+                                      color: Color(
                                         0xff0E4595,
                                       ),
                                       width: 1.5,
@@ -577,9 +1123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 validator: (value) {
                                   if (value == null ||
-                                      value
-                                          .trim()
-                                          .isEmpty) {
+                                      value.trim().isEmpty) {
                                     return AppStrings
                                         .phoneRequired;
                                   }
@@ -602,133 +1146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
 
                               const SizedBox(
-                                height: 13,
-                              ),
-
-                              // ==================================================
-                              // كلمة المرور
-                              // ==================================================
-
-                              TextFormField(
-                                controller:
-                                    passwordController,
-                                obscureText:
-                                    obscurePassword,
-                                textInputAction:
-                                    TextInputAction.done,
-                                textAlign: isArabic
-                                    ? TextAlign.right
-                                    : TextAlign.left,
-                                textDirection: isArabic
-                                    ? TextDirection.rtl
-                                    : TextDirection.ltr,
-                                autofillHints:
-                                    const [
-                                  AutofillHints
-                                      .password,
-                                ],
-                                enableSuggestions:
-                                    false,
-                                autocorrect: false,
-                                onFieldSubmitted:
-                                    (_) => login(),
-                                decoration:
-                                    InputDecoration(
-                                  hintText:
-                                      AppStrings
-                                          .password,
-                                  prefixIcon:
-                                      const Icon(
-                                    Icons.lock_outline,
-                                    color:
-                                        Color(
-                                      0xff0E4595,
-                                    ),
-                                  ),
-                                  suffixIcon:
-                                      IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        obscurePassword =
-                                            !obscurePassword;
-                                      });
-                                    },
-                                    icon: Icon(
-                                      obscurePassword
-                                          ? Icons
-                                              .visibility_off_outlined
-                                          : Icons
-                                              .visibility_outlined,
-                                      color:
-                                          const Color(
-                                        0xff7D8CA3,
-                                      ),
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor:
-                                      Colors.white,
-                                  border:
-                                      OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius
-                                            .circular(
-                                      8,
-                                    ),
-                                    borderSide:
-                                        const BorderSide(
-                                      color:
-                                          Color(
-                                        0xffDDE5EF,
-                                      ),
-                                    ),
-                                  ),
-                                  enabledBorder:
-                                      OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius
-                                            .circular(
-                                      8,
-                                    ),
-                                    borderSide:
-                                        const BorderSide(
-                                      color:
-                                          Color(
-                                        0xffDDE5EF,
-                                      ),
-                                    ),
-                                  ),
-                                  focusedBorder:
-                                      OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius
-                                            .circular(
-                                      8,
-                                    ),
-                                    borderSide:
-                                        const BorderSide(
-                                      color:
-                                          Color(
-                                        0xff0E4595,
-                                      ),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null ||
-                                      value.isEmpty) {
-                                    return AppStrings
-                                        .passwordRequired;
-                                  }
-
-                                  if (value.length < 6) {
-                                    return AppStrings
-                                        .passwordMinLength;
-                                  }
-
-                                  return null;
-                                },
+                                height: 8,
                               ),
 
                               // ==================================================
@@ -738,10 +1156,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (!widget.fromCheckout)
                                 Align(
                                   alignment: isArabic
-                                      ? Alignment
-                                          .centerRight
-                                      : Alignment
-                                          .centerLeft,
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
                                   child: TextButton(
                                     onPressed: () {
                                       Navigator.push(
@@ -757,14 +1173,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                           .forgotPassword,
                                       style:
                                           const TextStyle(
-                                        color:
-                                            Color(
+                                        color: Color(
                                           0xff0E4595,
                                         ),
                                         fontSize: 11.5,
                                         fontWeight:
-                                            FontWeight
-                                                .w700,
+                                            FontWeight.w700,
                                       ),
                                     ),
                                   ),
@@ -779,11 +1193,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               // ==================================================
 
                               SizedBox(
-                                width:
-                                    double.infinity,
+                                width: double.infinity,
                                 height: 47,
-                                child:
-                                    ElevatedButton(
+                                child: ElevatedButton(
                                   onPressed:
                                       loading
                                           ? null
@@ -806,9 +1218,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         RoundedRectangleBorder(
                                       borderRadius:
                                           BorderRadius
-                                              .circular(
-                                        7,
-                                      ),
+                                              .circular(7),
                                     ),
                                   ),
                                   child: loading
@@ -817,26 +1227,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                           height: 20,
                                           child:
                                               CircularProgressIndicator(
-                                            strokeWidth:
-                                                2,
+                                            strokeWidth: 2,
                                             valueColor:
                                                 AlwaysStoppedAnimation<
                                                     Color>(
-                                              Colors
-                                                  .white,
+                                              Colors.white,
                                             ),
                                           ),
                                         )
                                       : Text(
-                                          AppStrings
-                                              .login,
+                                          AppStrings.login,
                                           style:
                                               const TextStyle(
-                                            fontSize:
-                                                13,
+                                            fontSize: 13,
                                             fontWeight:
-                                                FontWeight
-                                                    .bold,
+                                                FontWeight.bold,
                                           ),
                                         ),
                                 ),
@@ -854,12 +1259,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 children: [
                                   const Expanded(
                                     child: Divider(
-                                      color:
-                                          Color(
+                                      color: Color(
                                         0xffDDE5EF,
                                       ),
                                     ),
                                   ),
+
                                   Padding(
                                     padding:
                                         const EdgeInsets
@@ -871,18 +1276,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                           .orContinueWith,
                                       style:
                                           const TextStyle(
-                                        color:
-                                            Color(
+                                        color: Color(
                                           0xff7D8CA3,
                                         ),
                                         fontSize: 11,
                                       ),
                                     ),
                                   ),
+
                                   const Expanded(
                                     child: Divider(
-                                      color:
-                                          Color(
+                                      color: Color(
                                         0xffDDE5EF,
                                       ),
                                     ),
@@ -900,21 +1304,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment
-                                        .center,
+                                    MainAxisAlignment.center,
                                 children: [
                                   _SocialButton(
                                     assetPath:
                                         'lib/assets/google_icon.png',
                                     fallbackIcon:
-                                        Icons
-                                            .g_mobiledata,
+                                        Icons.g_mobiledata,
                                     onTap:
                                         loginWithGoogle,
                                   ),
+
                                   const SizedBox(
                                     width: 16,
                                   ),
+
                                   _SocialButton(
                                     assetPath:
                                         'lib/assets/apple_icon.png',
@@ -936,21 +1340,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment
-                                        .center,
+                                    MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     AppStrings
                                         .dontHaveAccount,
                                     style:
                                         const TextStyle(
-                                      color:
-                                          Color(
+                                      color: Color(
                                         0xff7D8CA3,
                                       ),
                                       fontSize: 11.5,
                                     ),
                                   ),
+
                                   TextButton(
                                     onPressed: () {
                                       Navigator.push(
@@ -966,8 +1369,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           .createAccount,
                                       style:
                                           const TextStyle(
-                                        color:
-                                            Color(
+                                        color: Color(
                                           0xff0E4595,
                                         ),
                                         fontWeight:
@@ -992,13 +1394,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         .continueAsGuest,
                                     style:
                                         const TextStyle(
-                                      color:
-                                          Color(
+                                      color: Color(
                                         0xff123B72,
                                       ),
                                       fontWeight:
-                                          FontWeight
-                                              .w600,
+                                          FontWeight.w600,
                                       fontSize: 11.5,
                                     ),
                                   ),
@@ -1038,8 +1438,7 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius:
-          BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
         width: 52,
         height: 52,
@@ -1051,8 +1450,7 @@ class _SocialButton extends StatelessWidget {
               0xffDDE5EF,
             ),
           ),
-          borderRadius:
-              BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Image.asset(
           assetPath,

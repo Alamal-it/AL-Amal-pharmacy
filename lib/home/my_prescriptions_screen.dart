@@ -30,7 +30,7 @@ return Scaffold(
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: AppColors.border.withOpacity(0.3),
+                      color: AppColors.border.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.camera_alt_outlined,
@@ -91,7 +91,7 @@ return Scaffold(
                         width: 46,
                         height: 46,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.08),
+                          color: AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.description_outlined,

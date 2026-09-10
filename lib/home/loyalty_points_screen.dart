@@ -86,7 +86,7 @@ class LoyaltyPointsScreen extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: currentPoints / (currentPoints + pointsToNextReward),
                 minHeight: 8,
-                backgroundColor: AppColors.border.withOpacity(0.4),
+                backgroundColor: AppColors.border.withValues(alpha: 0.4),
                 color: AppColors.green,
               ),
             ),
@@ -151,7 +151,7 @@ class _InfoRow extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.1),
+              color: AppColors.green.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppColors.green, size: 18),

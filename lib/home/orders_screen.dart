@@ -64,7 +64,7 @@ return Scaffold(
                 width: 90,
                 height: 90,
                 decoration:BoxDecoration(
-                      color: AppColors.border.withOpacity(0.3),
+                      color: AppColors.border.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.receipt_long_outlined,
@@ -104,7 +104,7 @@ return Scaffold(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: _statusColor(order.status)
-                              .withOpacity(0.12),
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(

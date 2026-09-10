@@ -330,8 +330,7 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
                             ? [
                                 BoxShadow(
                                   color: AppColors.green
-                                      .withOpacity(0.16),
-                                  blurRadius: 8,
+.withValues(alpha: 0.16),                                  blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
                               ]
@@ -405,8 +404,7 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: AppColors.green.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
+color: AppColors.green.withValues(alpha: 0.12),                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.calendar_month_outlined,
@@ -560,8 +558,7 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
                             ? [
                                 BoxShadow(
                                   color: AppColors.green
-                                      .withOpacity(0.14),
-                                  blurRadius: 7,
+.withValues(alpha: 0.14),                                  blurRadius: 7,
                                   offset: const Offset(0, 3),
                                 ),
                               ]
@@ -629,8 +626,7 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
                       height: 42,
                       decoration: BoxDecoration(
                         color:
-                            AppColors.green.withOpacity(0.12),
-                        borderRadius:
+AppColors.green.withValues(alpha: 0.12),                        borderRadius:
                             BorderRadius.circular(12),
                       ),
                       child: const Icon(

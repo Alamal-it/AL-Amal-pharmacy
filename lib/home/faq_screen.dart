@@ -17,7 +17,7 @@ class FaqScreen extends StatefulWidget {
 }
 
 class _FaqScreenState extends State<FaqScreen> {
-  int? expandedIndex;// TODO: استبدال هذي القائمة بأسئلة حقيقية من الـ API أو من مديرك لاحقاً.
+  int? expandedIndex; 
   final List<FaqItem> faqs = const [
     FaqItem(
       question: 'كيف أقدر أطلب دواء يحتاج وصفة طبية؟',
@@ -83,7 +83,7 @@ class _FaqScreenState extends State<FaqScreen> {
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           color: isExpanded
-              ? AppColors.primary.withOpacity(0.05)
+              ? AppColors.primary.withValues(alpha: 0.05)
               : AppColors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(

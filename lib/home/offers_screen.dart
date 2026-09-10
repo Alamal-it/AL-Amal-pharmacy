@@ -557,8 +557,7 @@ class _OffersScreenState extends State<OffersScreen> {
                                   height: 56,
                                   color: AppColors
                                       .border
-                                      .withOpacity(
-                                          0.3),
+                                     .withValues(alpha: 0.3),
 
                                   child: const Icon(
                                     Icons
@@ -641,8 +640,8 @@ class _OffersScreenState extends State<OffersScreen> {
 
                           selectedColor:
                               AppColors.primary
-                                  .withOpacity(
-                            0.12,
+                                 .withValues(
+    alpha: 0.12,
                           ),
 
                           backgroundColor:

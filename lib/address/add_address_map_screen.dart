@@ -192,8 +192,7 @@ class _AddAddressMapScreenState extends State<AddAddressMapScreen> {
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 8,
+color: Colors.black.withValues(alpha: 0.08),                          blurRadius: 8,
                         ),
                       ],
                     ),
@@ -239,8 +238,7 @@ class _AddAddressMapScreenState extends State<AddAddressMapScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
-                      borderRadius: BorderRadius.circular(10),
+color: Colors.white.withValues(alpha: 0.95),                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       'ابحث أو حرك الخريطة لتغيير الموقع',
@@ -339,8 +337,7 @@ class _AddAddressMapScreenState extends State<AddAddressMapScreen> {
                             selected: selectedType == type,
                             onSelected: (_) =>
                                 setState(() => selectedType = type),
-                            selectedColor: AppColors.primary.withOpacity(0.12),
-                            labelStyle: TextStyle(
+selectedColor: AppColors.primary.withValues(alpha: 0.12),                            labelStyle: TextStyle(
                               color: selectedType == type
                                   ? AppColors.primary
                                   : AppColors.textGray,

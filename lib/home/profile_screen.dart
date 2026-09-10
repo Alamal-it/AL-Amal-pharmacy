@@ -326,8 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onSelect(label),
-      selectedColor: AppColors.primary.withOpacity(0.12),
-      backgroundColor: Colors.white,
+selectedColor: AppColors.primary.withValues(alpha: 0.12),      backgroundColor: Colors.white,
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
@@ -845,8 +844,7 @@ class _MenuTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isDestructive
-                ? Colors.red.withOpacity(0.3)
-                : AppColors.border,
+? Colors.red.withValues(alpha: 0.3)                : AppColors.border,
           ),
         ),
         child: Row(

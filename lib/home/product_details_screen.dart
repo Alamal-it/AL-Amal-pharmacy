@@ -72,8 +72,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         Container(
                           width: double.infinity,
                           height: 260,
-                          color: AppColors.border.withOpacity(0.2),
-                          child: product.image.isEmpty
+color: AppColors.border.withValues(alpha: 0.2),                          child: product.image.isEmpty
                               ? const Icon(Icons.image_outlined,
                                   size: 60, color: AppColors.textGray)
                               : Image.network(

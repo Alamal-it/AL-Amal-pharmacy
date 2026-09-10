@@ -204,8 +204,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(12),
+color: AppColors.primary.withValues(alpha: 0.06),        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
@@ -258,8 +257,7 @@ class _ValueTile extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.12),
-              shape: BoxShape.circle,
+color: AppColors.green.withValues(alpha: 0.12),              shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppColors.green, size: 20),
           ),

@@ -6,7 +6,6 @@ import '../services/user_service.dart';
 import '../widgets/delivery_option_sheet.dart';
 import 'guest_login_sheet.dart';
 import 'branch_picker_screen.dart';
-import 'payment_method_screen.dart'; 
 import 'delivery_review_screen.dart';
 
 class CartScreen extends StatefulWidget {
@@ -75,8 +74,8 @@ class _CartScreenState extends State<CartScreen> {
             width: 90,
             height: 90,
             decoration: BoxDecoration(
-              color: AppColors.border.withOpacity(0.3),
-              shape: BoxShape.circle,
+color: AppColors.border.withValues(alpha: 0.3),              
+shape: BoxShape.circle,
             ),
             child: const Icon(Icons.shopping_cart_outlined,
                 size: 40, color: AppColors.textGray),
@@ -132,8 +131,7 @@ class _CartScreenState extends State<CartScreen> {
                             errorBuilder: (_, __, ___) => Container(
                               width: 55,
                               height: 55,
-                              color: AppColors.border.withOpacity(0.3),
-                              child: const Icon(Icons.image_outlined,
+color: AppColors.border.withValues(alpha: 0.3),                              child: const Icon(Icons.image_outlined,
                                   color: AppColors.textGray),
                             ),
                           ),
@@ -215,8 +213,7 @@ class _CartScreenState extends State<CartScreen> {
             color: AppColors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
+color: Colors.black.withValues(alpha: 0.05),                blurRadius: 8,
                 offset: const Offset(0, -2),
               ),
             ],

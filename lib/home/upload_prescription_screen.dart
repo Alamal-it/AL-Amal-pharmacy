@@ -324,8 +324,7 @@ class _UploadPrescriptionScreenState
                 height: 200,
 
                 decoration: BoxDecoration(
-                  color: AppColors.border.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14),
+color: AppColors.border.withValues(alpha: 0.15),                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: AppColors.border,
                   ),
@@ -341,8 +340,7 @@ class _UploadPrescriptionScreenState
                             height: 60,
 
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              shape: BoxShape.circle,
+color: AppColors.primary.withValues(alpha: 0.1),                              shape: BoxShape.circle,
                             ),
 
                             child: const Icon(
@@ -580,8 +578,7 @@ class _UploadPrescriptionScreenState
                 padding: const EdgeInsets.all(10),
 
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(10),
+color: AppColors.primary.withValues(alpha: 0.06),                  borderRadius: BorderRadius.circular(10),
                 ),
 
                 child: const Row(
@@ -731,8 +728,7 @@ class _PaymentOptionCard extends StatelessWidget {
 
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary.withOpacity(0.08)
-              : AppColors.white,
+? AppColors.primary.withValues(alpha: 0.08)              : AppColors.white,
 
           borderRadius: BorderRadius.circular(12),
 

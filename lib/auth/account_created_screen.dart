@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 import '../core/app_strings.dart';
-import '../services/locale_service.dart';
 import 'login_screen.dart';
 
 class AccountCreatedScreen extends StatelessWidget {

@@ -55,7 +55,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: AppColors.border.withOpacity(0.3),
+                      color: AppColors.border.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.favorite_border,
@@ -116,7 +116,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 aspectRatio: 1.3,
                                 child: product.image.isEmpty
                                     ? Container(color: AppColors.border
-                                            .withOpacity(0.3),
+                                            .withValues(alpha: 0.3),
                                         child: const Icon(
                                             Icons.image_outlined,
                                             color: AppColors.textGray),
@@ -127,7 +127,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                         errorBuilder: (_, __, ___) =>
                                             Container(
                                           color: AppColors.border
-                                              .withOpacity(0.3),
+                                              .withValues(alpha: 0.3),
                                           child: const Icon(
                                               Icons.image_not_supported,
                                               color: AppColors.textGray),

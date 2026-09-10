@@ -203,8 +203,7 @@ class _DeliveryOptionSheetState extends State<DeliveryOptionSheet> {
                           backgroundColor: AppColors.green,
                           foregroundColor: Colors.white,
                           disabledBackgroundColor:
-                              AppColors.green.withOpacity(0.4),
-                          shape: RoundedRectangleBorder(
+AppColors.green.withValues(alpha: 0.4),                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -249,8 +248,7 @@ class _OptionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.green.withOpacity(0.06) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+color: selected ? AppColors.green.withValues(alpha: 0.06) : Colors.white,          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? AppColors.green : AppColors.border,
             width: selected ? 1.6 : 1,

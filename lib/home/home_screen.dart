@@ -326,9 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: goToLogin,
                                 style: TextButton.styleFrom(
                                   backgroundColor:
-                                      AppColors.green.withOpacity(
-                                    0.12,
-                                  ),
+                                      AppColors.green.withValues(alpha: 0.12),
                                   padding:
                                       const EdgeInsets.symmetric(
                                     horizontal: 14,

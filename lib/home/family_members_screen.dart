@@ -123,7 +123,7 @@ class _FamilyMembersScreenState extends State<FamilyMembersScreen> {
                             });
                           },
                           selectedColor:
-                              AppColors.primary.withOpacity(0.12),
+                              AppColors.primary.withValues(alpha: 0.12),
                           labelStyle: TextStyle(
                             fontSize: 11,
                             color: relation == r
@@ -222,7 +222,7 @@ class _FamilyMembersScreenState extends State<FamilyMembersScreen> {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: AppColors.border.withOpacity(0.3),
+                      color: AppColors.border.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -346,7 +346,7 @@ class _FamilyMembersScreenState extends State<FamilyMembersScreen> {
                         height: 40,
                         decoration: BoxDecoration(
                           color:
-                              AppColors.primary.withOpacity(0.08),
+                              AppColors.primary.withValues(alpha: 0.08),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

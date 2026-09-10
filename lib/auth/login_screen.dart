@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 import '../core/app_strings.dart';
 import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
@@ -50,8 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
   // ============================================================
   // Web Client ID
   // ============================================================
-static const String webClientId =
-    '674471536194-pefh07cnq060fthlk131o3467ilppfir.apps.googleusercontent.com';
+
+  static const String webClientId =
+      '674471536194-pefh07cnq060fthlk1310o3467ilppfir.apps.googleusercontent.com';
 
   // ============================================================
   // Dispose
@@ -284,9 +286,11 @@ static const String webClientId =
     }
 
     try {
-      setState(() {
-        loading = true;
-      });
+      if (mounted) {
+        setState(() {
+          loading = true;
+        });
+      }
 
       final PhoneAuthCredential credential =
           PhoneAuthProvider.credential(
@@ -309,7 +313,11 @@ static const String webClientId =
         loading = false;
       });
 
-      Navigator.of(dialogContext).pop();
+      // نستخدم نفس الـ context الخاص بالنافذة
+      // بعد التأكد أن الصفحة ما زالت موجودة.
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext).pop();
+      }
 
       _goToMainScreen();
     } on FirebaseAuthException catch (e) {
@@ -407,9 +415,7 @@ static const String webClientId =
                   fontSize: 12,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               Text(
                 phone,
                 textAlign: TextAlign.center,
@@ -419,9 +425,7 @@ static const String webClientId =
                   fontSize: 13,
                 ),
               ),
-
               const SizedBox(height: 18),
-
               TextField(
                 controller: otpController,
                 keyboardType: TextInputType.number,
@@ -479,9 +483,7 @@ static const String webClientId =
                 ),
               ),
             ),
-
             const SizedBox(width: 10),
-
             SizedBox(
               width: 100,
               height: 40,
@@ -493,6 +495,10 @@ static const String webClientId =
                             otpController.text.trim();
 
                         if (otp.length != 6) {
+                          if (!mounted) {
+                            return;
+                          }
+
                           ScaffoldMessenger.of(context)
                               .showSnackBar(
                             const SnackBar(
@@ -653,6 +659,10 @@ static const String webClientId =
       // تهيئة Google
       await initializeGoogleSignIn();
 
+      if (!mounted) {
+        return;
+      }
+
       // فتح حسابات Google
       final GoogleSignInAccount account =
           await _googleSignIn.authenticate();
@@ -730,6 +740,10 @@ static const String webClientId =
       // ========================================================
       // الانتقال
       // ========================================================
+
+      if (!mounted) {
+        return;
+      }
 
       if (widget.fromCheckout) {
         Navigator.pop(context, true);
@@ -832,12 +846,10 @@ static const String webClientId =
       case GoogleSignInExceptionCode.canceled:
         return 'تم إلغاء تسجيل الدخول عبر Google.';
 
-      case GoogleSignInExceptionCode
-          .clientConfigurationError:
+      case GoogleSignInExceptionCode.clientConfigurationError:
         return 'إعدادات Google غير صحيحة. تأكدي من Package Name و SHA-1 و Web Client ID.';
 
-      case GoogleSignInExceptionCode
-          .providerConfigurationError:
+      case GoogleSignInExceptionCode.providerConfigurationError:
         return 'خدمة Google غير متاحة أو إعداداتها غير صحيحة.';
 
       case GoogleSignInExceptionCode.uiUnavailable:
@@ -850,9 +862,6 @@ static const String webClientId =
         return 'حساب Google المستخدم غير متطابق.';
 
       case GoogleSignInExceptionCode.unknownError:
-        return 'حدث خطأ أثناء تسجيل الدخول عبر Google: ${e.description ?? ''}';
-
-      default:
         return 'حدث خطأ أثناء تسجيل الدخول عبر Google: ${e.description ?? ''}';
     }
   }
@@ -1264,7 +1273,6 @@ static const String webClientId =
                                       ),
                                     ),
                                   ),
-
                                   Padding(
                                     padding:
                                         const EdgeInsets
@@ -1283,7 +1291,6 @@ static const String webClientId =
                                       ),
                                     ),
                                   ),
-
                                   const Expanded(
                                     child: Divider(
                                       color: Color(
@@ -1314,11 +1321,9 @@ static const String webClientId =
                                     onTap:
                                         loginWithGoogle,
                                   ),
-
                                   const SizedBox(
                                     width: 16,
                                   ),
-
                                   _SocialButton(
                                     assetPath:
                                         'lib/assets/apple_icon.png',
@@ -1353,7 +1358,6 @@ static const String webClientId =
                                       fontSize: 11.5,
                                     ),
                                   ),
-
                                   TextButton(
                                     onPressed: () {
                                       Navigator.push(

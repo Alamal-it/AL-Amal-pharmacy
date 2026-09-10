@@ -170,8 +170,7 @@ class _OrderConfirmationScreenState
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.border.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
+color: AppColors.border.withValues(alpha: 0.2),                    borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -387,7 +386,7 @@ class _OrderConfirmationScreenState
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.green.withOpacity(0.12),
+                       color: AppColors.green.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
@@ -519,8 +518,7 @@ class _OrderConfirmationScreenState
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: AppColors.green.withOpacity(0.14),
-                      shape: BoxShape.circle,
+color: AppColors.green.withValues(alpha: 0.14),                      shape: BoxShape.circle,
                     ),
                     child: Icon(
                       widget.isPickup
@@ -724,7 +722,7 @@ class _OrderConfirmationScreenState
         horizontal: 16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.border.withOpacity(0.25),
+        color: AppColors.border.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(16),
       ),
       alignment: Alignment.center,
@@ -732,7 +730,7 @@ class _OrderConfirmationScreenState
         width: 54,
         height: 54,
         decoration: BoxDecoration(
-          color: AppColors.green.withOpacity(0.18),
+          color: AppColors.green.withValues(alpha: 0.18),
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -762,7 +760,7 @@ class _OrderConfirmationScreenState
           horizontal: 16,
         ),
         decoration: BoxDecoration(
-          color: AppColors.border.withOpacity(0.25),
+          color: AppColors.border.withValues(alpha: 0.25),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
@@ -913,7 +911,7 @@ class _OrderConfirmationScreenState
                         color: (isDone || isCurrent)
                             ? AppColors.green
                             : AppColors.border
-                                .withOpacity(0.4),
+                                .withValues(alpha: 0.4),
                         shape: BoxShape.circle,
                       ),
                       child: isDone
@@ -1006,7 +1004,7 @@ class _OrderConfirmationScreenState
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(

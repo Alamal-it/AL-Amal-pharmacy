@@ -114,8 +114,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.green.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(14),
+color: AppColors.green.withValues(alpha: 0.06),                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.green, width: 1.4),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.end,

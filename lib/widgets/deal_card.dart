@@ -46,8 +46,7 @@ class DealCard extends StatelessWidget {
                     aspectRatio: 1.3,
                     child: product.image.isEmpty
                         ? Container(
-                            color: AppColors.border.withOpacity(0.3),
-                            child: const Icon(Icons.image_outlined,
+color: AppColors.border.withValues(alpha: 0.3),                            child: const Icon(Icons.image_outlined,
                                 color: AppColors.textGray),
                           )
                         : Image.network(
@@ -56,8 +55,8 @@ class DealCard extends StatelessWidget {
                             loadingBuilder: (context, child, progress) {
                               if (progress == null) return child;
                               return Container(
-                                color: AppColors.border.withOpacity(0.2),
-                                child: const Center(
+color: AppColors.border.withValues(alpha: 0.2),                            
+    child: const Center(
                                   child: SizedBox(
                                     width: 18,
                                     height: 18,
@@ -70,8 +69,7 @@ class DealCard extends StatelessWidget {
                               );
                             },
                             errorBuilder: (_, __, ___) => Container(
-                              color: AppColors.border.withOpacity(0.3),
-                              child: const Icon(Icons.image_not_supported,
+color: AppColors.border.withValues(alpha: 0.3),                              child: const Icon(Icons.image_not_supported,
                                   color: AppColors.textGray),
                             ),
                           ),

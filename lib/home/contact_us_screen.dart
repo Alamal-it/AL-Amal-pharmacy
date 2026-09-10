@@ -11,8 +11,6 @@ class ContactUsScreen extends StatelessWidget {
   // =========================
   static const String _phoneNumber = '966535555440';
   static const String _email = 'online@alamalph.com';
-  static const String _workingHours =
-      'الأحد - الخميس، من 10 صباحًا حتى 6 مساءً';
 
   Future<void> _launch(BuildContext context, Uri uri) async {
     if (await canLaunchUrl(uri)) {

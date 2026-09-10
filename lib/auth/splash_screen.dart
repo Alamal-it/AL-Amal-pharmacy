@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
+import '../main_nav/main_nav_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,11 +17,16 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
 
     _timer = Timer(
-      const Duration(seconds: 3), // قللتها من 10 ثواني لـ 3 — أفضل لتجربة المستخدم
+      const Duration(seconds: 3),
       () {
         if (!mounted) return;
+
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (_) => const MainNavScreen(
+              isGuest: true,
+            ),
+          ),
         );
       },
     );
@@ -48,7 +53,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 height: 200,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
-                  // فولباك آمن — لو الصورة مفقودة أو اسمها تغيّر، التطبيق ما يكسر
                   return const Icon(
                     Icons.local_pharmacy_outlined,
                     size: 155,

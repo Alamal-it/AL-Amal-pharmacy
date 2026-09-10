@@ -91,7 +91,7 @@ class _OrderRatingScreenState extends State<OrderRatingScreen> {
                 width: 84,
                 height: 84,
                 decoration: BoxDecoration(
-                  color: AppColors.green.withOpacity(0.12),
+                  color: AppColors.green.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Center(

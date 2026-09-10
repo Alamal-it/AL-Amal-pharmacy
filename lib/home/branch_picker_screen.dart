@@ -185,8 +185,7 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.green.withOpacity(0.06)
-                                  : Colors.white,
+? AppColors.green.withValues(alpha: 0.06)                                  : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isSelected

@@ -121,7 +121,7 @@ return Scaffold(
                 width: 90,
                 height: 90,
                 decoration:BoxDecoration(
-                      color: AppColors.border.withOpacity(0.3),
+                      color: AppColors.border.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.notifications_none,
@@ -160,7 +160,7 @@ return Scaffold(
                     alignment: Alignment.centerLeft,
                     padding: const EdgeInsets.only(left: 20),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.delete_outline,
@@ -176,12 +176,12 @@ return Scaffold(
                       decoration: BoxDecoration(
                         color: n.isRead
                             ? AppColors.white
-                            : AppColors.primary.withOpacity(0.05),
+                            : AppColors.primary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: n.isRead
                               ? AppColors.border
-                              : AppColors.primary.withOpacity(0.3),
+                              : AppColors.primary.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -239,7 +239,7 @@ return Scaffold(
                           Container(width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: _colorFor(n.type).withOpacity(0.1),
+                              color: _colorFor(n.type).withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(_iconFor(n.type),

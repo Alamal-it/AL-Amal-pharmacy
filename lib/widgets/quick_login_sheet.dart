@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
+import '../core/app_strings.dart';
 import '../services/auth_service.dart';
 
 class QuickLoginSheet extends StatefulWidget {
   const QuickLoginSheet({super.key});
 
-  /// يفتح البوتوم شيت. يرجع true لو المستخدم سجّل بنجاح، و false/null لو ألغى.
+  /// يفتح البوتوم شيت.
+  /// يرجع true لو المستخدم سجّل بنجاح،
+  /// و false/null لو ألغى.
   static Future<bool?> show(BuildContext context) {
     return showModalBottomSheet<bool>(
       context: context,
@@ -21,8 +24,10 @@ class QuickLoginSheet extends StatefulWidget {
 
 class _QuickLoginSheetState extends State<QuickLoginSheet> {
   final formKey = GlobalKey<FormState>();
+
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
+
   bool loading = false;
 
   @override
@@ -33,12 +38,18 @@ class _QuickLoginSheetState extends State<QuickLoginSheet> {
   }
 
   Future<void> submit() async {
-    if (!formKey.currentState!.validate()) return;
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => loading = true);
 
-    // TODO: هنا مكان استدعاء API الحقيقي (إرسال/تحقق OTP مثلاً).
-    await Future.delayed(const Duration(milliseconds: 400));
+    // TODO:
+    // هنا مكان استدعاء API الحقيقي
+    // مثل إرسال / تحقق OTP.
+    await Future.delayed(
+      const Duration(milliseconds: 400),
+    );
 
     if (!mounted) return;
 
@@ -59,15 +70,26 @@ class _QuickLoginSheetState extends State<QuickLoginSheet> {
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(20),
+          ),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+        padding: const EdgeInsets.fromLTRB(
+          20,
+          14,
+          20,
+          24,
+        ),
         child: Form(
           key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // =====================================================
+              // الخط العلوي
+              // =====================================================
+
               Center(
                 child: Container(
                   width: 40,
@@ -78,90 +100,155 @@ class _QuickLoginSheetState extends State<QuickLoginSheet> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 16),
+
+              // =====================================================
+              // العنوان + زر الإغلاق
+              // =====================================================
+
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    icon: const Icon(Icons.close, color: AppColors.primaryDark),
+                    onPressed: () {
+                      Navigator.pop(context, false);
+                    },
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
-                  const Text(
-                    'سجّلي الدخول لإكمال الطلب',
-                    style: TextStyle(
+
+                  Text(
+                    AppStrings.quickLoginTitle,
+                    style: const TextStyle(
                       color: AppColors.primaryDark,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+
                   const SizedBox(width: 40),
                 ],
               ),
+
               const SizedBox(height: 4),
-              const Text(
-                'نحتاج اسمك ورقم جوالك بس عشان نكمل طلبك ونتواصل معك',
+
+              // =====================================================
+              // الوصف
+              // =====================================================
+
+              Text(
+                AppStrings.quickLoginSubtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textGray, fontSize: 11.5),
+                style: const TextStyle(
+                  color: AppColors.textGray,
+                  fontSize: 11.5,
+                ),
               ),
+
               const SizedBox(height: 20),
+
+              // =====================================================
+              // الاسم
+              // =====================================================
+
               TextFormField(
                 controller: nameController,
                 textAlign: TextAlign.right,
                 decoration: InputDecoration(
-                  hintText: 'الاسم',
-                  prefixIcon: const Icon(Icons.person_outline,
-                      color: AppColors.primary),
+                  hintText:
+                      AppStrings.quickLoginNameHint,
+                  prefixIcon: const Icon(
+                    Icons.person_outline,
+                    color: AppColors.primary,
+                  ),
                   filled: true,
                   fillColor: const Color(0xffF7F9FC),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: const BorderSide(
+                      color: AppColors.border,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: const BorderSide(
+                      color: AppColors.border,
+                    ),
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'يرجى إدخال الاسم';
+                  if (value == null ||
+                      value.trim().isEmpty) {
+                    return AppStrings.quickLoginNameRequired;
                   }
+
                   return null;
                 },
               ),
+
               const SizedBox(height: 12),
+
+              // =====================================================
+              // رقم الجوال
+              // =====================================================
+
               TextFormField(
                 controller: phoneController,
                 textAlign: TextAlign.right,
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
-                  hintText: 'رقم الجوال',
-                  prefixIcon: const Icon(Icons.phone_outlined,
-                      color: AppColors.primary),
+                  hintText:
+                      AppStrings.quickLoginPhoneHint,
+                  prefixIcon: const Icon(
+                    Icons.phone_outlined,
+                    color: AppColors.primary,
+                  ),
                   filled: true,
                   fillColor: const Color(0xffF7F9FC),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: const BorderSide(
+                      color: AppColors.border,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: const BorderSide(
+                      color: AppColors.border,
+                    ),
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'يرجى إدخال رقم الجوال';
+                  if (value == null ||
+                      value.trim().isEmpty) {
+                    return AppStrings.quickLoginPhoneRequired;
                   }
-                  final phone = value.replaceAll(' ', '');
-                  if (!RegExp(r'^(05\d{8}|5\d{8}|\+9665\d{8})$')
-                      .hasMatch(phone)) {
-                    return 'أدخلي رقم جوال سعودي صحيح';
+
+                  final phone =
+                      value.replaceAll(' ', '');
+
+                  if (!RegExp(
+                    r'^(05\d{8}|5\d{8}|\+9665\d{8})$',
+                  ).hasMatch(phone)) {
+                    // هذا المفتاح موجود مسبقًا في AppStrings
+                    // لذلك لا نضيفه مرة ثانية.
+                    return AppStrings.invalidSaudiPhone;
                   }
+
                   return null;
                 },
               ),
+
               const SizedBox(height: 18),
+
+              // =====================================================
+              // زر متابعة الطلب
+              // =====================================================
+
               SizedBox(
                 height: 47,
                 child: ElevatedButton(
@@ -181,13 +268,17 @@ class _QuickLoginSheetState extends State<QuickLoginSheet> {
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                                AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
-                      : const Text(
-                          'متابعة الطلب',
-                          style: TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.bold),
+                      : Text(
+                          AppStrings.continueOrder,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                 ),
               ),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../core/app_colors.dart';
+import '../core/app_strings.dart';
 
 enum PaymentMethod { insurance, cash }
 
@@ -28,14 +29,14 @@ class _UploadPrescriptionScreenState
   bool isSubmitting = false;
 
   // شركات التأمين
-  final List<String> insuranceCompanies = const [
-    'بوبا العربية',
-    'التعاونية',
-    'ميدغلف',
-    'ولاء للتأمين',
-    'الراجحي تكافل',
-    'أخرى',
-  ];
+  List<String> get insuranceCompanies => [
+        AppStrings.insuranceBupa,
+        AppStrings.insuranceTawuniya,
+        AppStrings.insuranceMedgulf,
+        AppStrings.insuranceWalaa,
+        AppStrings.insuranceAlRajhi,
+        AppStrings.insuranceOther,
+      ];
 
   @override
   void dispose() {
@@ -81,8 +82,8 @@ class _UploadPrescriptionScreenState
                     Icons.camera_alt_outlined,
                     color: AppColors.primary,
                   ),
-                  title: const Text(
-                    'التقاط صورة بالكاميرا',
+                  title: Text(
+                    AppStrings.takePrescriptionPhoto,
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -94,8 +95,8 @@ class _UploadPrescriptionScreenState
                     Icons.photo_library_outlined,
                     color: AppColors.primary,
                   ),
-                  title: const Text(
-                    'اختيار من المعرض',
+                  title: Text(
+                    AppStrings.chooseFromGallery,
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -127,8 +128,10 @@ class _UploadPrescriptionScreenState
   Future<void> submitPrescription() async {
     if (selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الرجاء إرفاق صورة الوصفة أولاً'),
+        SnackBar(
+          content: Text(
+            AppStrings.attachPrescriptionFirst,
+          ),
         ),
       );
       return;
@@ -137,8 +140,10 @@ class _UploadPrescriptionScreenState
     if (paymentMethod == PaymentMethod.insurance) {
       if (selectedInsuranceCompany == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('الرجاء اختيار شركة التأمين'),
+          SnackBar(
+            content: Text(
+              AppStrings.selectInsuranceFirst,
+            ),
           ),
         );
         return;
@@ -147,8 +152,10 @@ class _UploadPrescriptionScreenState
       if (membershipController.text.trim().isEmpty ||
           idController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('الرجاء تعبئة بيانات التأمين كاملة'),
+          SnackBar(
+            content: Text(
+              AppStrings.completeInsuranceData,
+            ),
           ),
         );
         return;
@@ -203,9 +210,10 @@ class _UploadPrescriptionScreenState
 
                 const SizedBox(height: 18),
 
-                const Text(
-                  'تم إرسال وصفتك بنجاح',
-                  style: TextStyle(
+                Text(
+                  AppStrings.prescriptionSentSuccessfully,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primaryDark,
@@ -216,8 +224,8 @@ class _UploadPrescriptionScreenState
 
                 Text(
                   paymentMethod == PaymentMethod.insurance
-                      ? 'سيتم التحقق من التغطية التأمينية والتواصل معك'
-                      : 'سيتم مراجعتها والتواصل معك قريباً',
+                      ? AppStrings.insuranceCoverageCheckingMessage
+                      : AppStrings.prescriptionReviewMessage,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 12,
@@ -241,9 +249,9 @@ class _UploadPrescriptionScreenState
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      'تم',
-                      style: TextStyle(
+                    child: Text(
+                      AppStrings.doneButton,
+                      style: const TextStyle(
                         color: Colors.white,
                       ),
                     ),
@@ -269,9 +277,9 @@ class _UploadPrescriptionScreenState
           color: AppColors.primaryDark,
         ),
         centerTitle: true,
-        title: const Text(
-          'وصفتي',
-          style: TextStyle(
+        title: Text(
+          AppStrings.wasfaty,
+          style: const TextStyle(
             color: AppColors.primaryDark,
             fontWeight: FontWeight.w700,
             fontSize: 16,
@@ -290,20 +298,20 @@ class _UploadPrescriptionScreenState
             // شعار وصفتي
             // ==================================================
 
-           Center(
-  child: Image.asset(
-    'lib/assets/wasfaty_logo.png',
-    height: 80,
-    fit: BoxFit.contain,
-  ),
-),
+            Center(
+              child: Image.asset(
+                'lib/assets/wasfaty_logo.png',
+                height: 80,
+                fit: BoxFit.contain,
+              ),
+            ),
 
             const SizedBox(height: 15),
 
-            const Text(
-              'ارفعي صورة واضحة لوصفتك الطبية وسيقوم فريقنا بمراجعتها وتجهيز طلبك',
+            Text(
+              AppStrings.prescriptionDescription,
               textAlign: TextAlign.right,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.textGray,
                 fontSize: 12.5,
                 height: 1.6,
@@ -324,7 +332,8 @@ class _UploadPrescriptionScreenState
                 height: 200,
 
                 decoration: BoxDecoration(
-color: AppColors.border.withValues(alpha: 0.15),                  borderRadius: BorderRadius.circular(14),
+                  color: AppColors.border.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: AppColors.border,
                   ),
@@ -340,7 +349,9 @@ color: AppColors.border.withValues(alpha: 0.15),                  borderRadius: 
                             height: 60,
 
                             decoration: BoxDecoration(
-color: AppColors.primary.withValues(alpha: 0.1),                              shape: BoxShape.circle,
+                              color: AppColors.primary
+                                  .withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
                             ),
 
                             child: const Icon(
@@ -352,9 +363,10 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
 
                           const SizedBox(height: 12),
 
-                          const Text(
-                            'اضغطي لإرفاق صورة الوصفة',
-                            style: TextStyle(
+                          Text(
+                            AppStrings.attachPrescription,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
                               color: AppColors.primaryDark,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -363,9 +375,9 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
 
                           const SizedBox(height: 4),
 
-                          const Text(
-                            'كاميرا أو من المعرض',
-                            style: TextStyle(
+                          Text(
+                            AppStrings.cameraOrGallery,
+                            style: const TextStyle(
                               color: AppColors.textGray,
                               fontSize: 11,
                             ),
@@ -424,11 +436,11 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
             // طريقة الدفع
             // ==================================================
 
-            const Align(
+            Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'طريقة الدفع',
-                style: TextStyle(
+                AppStrings.paymentMethodTitle,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primaryDark,
@@ -444,7 +456,7 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
                 Expanded(
                   child: _PaymentOptionCard(
                     icon: Icons.payments_outlined,
-                    label: 'نقدي',
+                    label: AppStrings.cashPayment,
                     selected:
                         paymentMethod == PaymentMethod.cash,
                     onTap: () {
@@ -460,7 +472,7 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
                 Expanded(
                   child: _PaymentOptionCard(
                     icon: Icons.health_and_safety_outlined,
-                    label: 'تأمين طبي',
+                    label: AppStrings.medicalInsurance,
                     selected:
                         paymentMethod == PaymentMethod.insurance,
                     onTap: () {
@@ -482,11 +494,11 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
 
               const SizedBox(height: 20),
 
-              const Align(
+              Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  'بيانات التأمين',
-                  style: TextStyle(
+                  AppStrings.insuranceInformation,
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primaryDark,
@@ -502,7 +514,7 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
                 alignment: Alignment.centerRight,
 
                 decoration: InputDecoration(
-                  hintText: 'اختاري شركة التأمين',
+                  hintText: AppStrings.selectInsuranceCompany,
                   hintStyle: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textGray,
@@ -540,7 +552,8 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
                 textAlign: TextAlign.right,
 
                 decoration: InputDecoration(
-                  hintText: 'رقم العضوية / الوثيقة التأمينية',
+                  hintText:
+                      AppStrings.insuranceMembershipNumber,
                   hintStyle: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textGray,
@@ -560,7 +573,7 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
                 keyboardType: TextInputType.number,
 
                 decoration: InputDecoration(
-                  hintText: 'رقم الهوية / الإقامة',
+                  hintText: AppStrings.idOrIqamaNumber,
                   hintStyle: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textGray,
@@ -578,25 +591,27 @@ color: AppColors.primary.withValues(alpha: 0.1),                              sh
                 padding: const EdgeInsets.all(10),
 
                 decoration: BoxDecoration(
-color: AppColors.primary.withValues(alpha: 0.06),                  borderRadius: BorderRadius.circular(10),
+                  color:
+                      AppColors.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(10),
                 ),
 
-                child: const Row(
+                child: Row(
                   children: [
 
-                    Icon(
+                    const Icon(
                       Icons.info_outline,
                       color: AppColors.primary,
                       size: 16,
                     ),
 
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
 
                     Expanded(
                       child: Text(
-                        'سيتم التحقق من تغطية التأمين قبل تجهيز الطلب',
+                        AppStrings.insuranceVerificationNotice,
                         textAlign: TextAlign.right,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.primaryDark,
                         ),
@@ -613,11 +628,11 @@ color: AppColors.primary.withValues(alpha: 0.06),                  borderRadius:
             // الملاحظات
             // ==================================================
 
-            const Align(
+            Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'ملاحظات إضافية (اختياري)',
-                style: TextStyle(
+                AppStrings.additionalNotesOptional,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primaryDark,
@@ -633,7 +648,7 @@ color: AppColors.primary.withValues(alpha: 0.06),                  borderRadius:
               maxLines: 3,
 
               decoration: InputDecoration(
-                hintText: 'مثال: أحتاج توصيل بسرعة',
+                hintText: AppStrings.prescriptionNoteHint,
                 hintStyle: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textGray,
@@ -681,9 +696,9 @@ color: AppColors.primary.withValues(alpha: 0.06),                  borderRadius:
                         ),
                       )
 
-                    : const Text(
-                        'إرسال الوصفة',
-                        style: TextStyle(
+                    : Text(
+                        AppStrings.sendPrescription,
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -728,7 +743,8 @@ class _PaymentOptionCard extends StatelessWidget {
 
         decoration: BoxDecoration(
           color: selected
-? AppColors.primary.withValues(alpha: 0.08)              : AppColors.white,
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : AppColors.white,
 
           borderRadius: BorderRadius.circular(12),
 
@@ -755,6 +771,7 @@ class _PaymentOptionCard extends StatelessWidget {
 
             Text(
               label,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
@@ -769,3 +786,4 @@ class _PaymentOptionCard extends StatelessWidget {
     );
   }
 }
+

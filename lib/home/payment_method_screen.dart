@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
+import '../core/app_strings.dart';
 import '../services/cart_service.dart';
 import '../services/order_service.dart';
 import 'order_confirmation_screen.dart';
@@ -46,50 +47,50 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   // خيارات الدفع
   // =========================================================
 
-  final List<_PaymentOption> options = const [
-    _PaymentOption(
-      choice: PaymentChoice.mada,
-      label: 'مدى',
-      assetPath: 'lib/assets/mada_icon.png',
-      fallbackIcon: Icons.credit_card,
-    ),
-    _PaymentOption(
-      choice: PaymentChoice.card,
-      label: 'فيزا / ماستركارد',
-      assetPath: 'lib/assets/visa_mastercard_icon.png',
-      fallbackIcon: Icons.credit_card_outlined,
-    ),
-    _PaymentOption(
-      choice: PaymentChoice.applePay,
-      label: 'Apple Pay',
-      assetPath: 'lib/assets/apple_pay_icon.png',
-      fallbackIcon: Icons.apple,
-    ),
-    _PaymentOption(
-      choice: PaymentChoice.cashOnDelivery,
-      label: 'الدفع عند الاستلام',
-      assetPath: null,
-      fallbackIcon: Icons.payments_outlined,
-    ),
-    _PaymentOption(
-      choice: PaymentChoice.tamara,
-      label: 'تمارا  ',
-      assetPath: 'lib/assets/tamara_icon.png',
-      fallbackIcon: Icons.calendar_month_outlined,
-    ),
-    _PaymentOption(
-      choice: PaymentChoice.tabby,
-      label: 'تابي',
-      assetPath: 'lib/assets/tabby_icon.png',
-      fallbackIcon: Icons.calendar_today_outlined,
-    ),
-    _PaymentOption(
-      choice: PaymentChoice.wallet,
-      label: 'المحفظة الداخلية',
-      assetPath: null,
-      fallbackIcon: Icons.account_balance_wallet_outlined,
-    ),
-  ];
+  List<_PaymentOption> get options => [
+        _PaymentOption(
+          choice: PaymentChoice.mada,
+          label: AppStrings.mada,
+          assetPath: 'lib/assets/mada_icon.png',
+          fallbackIcon: Icons.credit_card,
+        ),
+        _PaymentOption(
+          choice: PaymentChoice.card,
+          label: AppStrings.visaMastercard,
+          assetPath: 'lib/assets/visa_mastercard_icon.png',
+          fallbackIcon: Icons.credit_card_outlined,
+        ),
+        _PaymentOption(
+          choice: PaymentChoice.applePay,
+          label: AppStrings.applePay,
+          assetPath: 'lib/assets/apple_pay_icon.png',
+          fallbackIcon: Icons.apple,
+        ),
+        _PaymentOption(
+          choice: PaymentChoice.cashOnDelivery,
+          label: AppStrings.cashOnDelivery,
+          assetPath: null,
+          fallbackIcon: Icons.payments_outlined,
+        ),
+        _PaymentOption(
+          choice: PaymentChoice.tamara,
+          label: AppStrings.tamara,
+          assetPath: 'lib/assets/tamara_icon.png',
+          fallbackIcon: Icons.calendar_month_outlined,
+        ),
+        _PaymentOption(
+          choice: PaymentChoice.tabby,
+          label: AppStrings.tabby,
+          assetPath: 'lib/assets/tabby_icon.png',
+          fallbackIcon: Icons.calendar_today_outlined,
+        ),
+        _PaymentOption(
+          choice: PaymentChoice.wallet,
+          label: AppStrings.internalWallet,
+          assetPath: null,
+          fallbackIcon: Icons.account_balance_wallet_outlined,
+        ),
+      ];
 
   // =========================================================
   // تأكيد الدفع وإنشاء الطلب
@@ -114,8 +115,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       ),
     );
 
-    // ملاحظة:
-    // لا نحذف السلة هنا قبل دخول شاشة التأكيد،
+    // لا نحذف السلة هنا قبل الدخول إلى شاشة التأكيد،
     // لأن شاشة التأكيد قد تحتاج بيانات السلة.
     //
     // سيتم حذف السلة بعد إتمام الطلب من المكان المناسب.
@@ -151,9 +151,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           color: AppColors.primaryDark,
         ),
         centerTitle: true,
-        title: const Text(
-          'طريقة الدفع',
-          style: TextStyle(
+        title: Text(
+          AppStrings.paymentMethod,
+          style: const TextStyle(
             color: AppColors.primaryDark,
             fontWeight: FontWeight.w700,
             fontSize: 16,
@@ -197,7 +197,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   color: isSelected
                       ? AppColors.green
                       : AppColors.border,
-
                   width: isSelected ? 1.6 : 1,
                 ),
               ),
@@ -228,7 +227,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                     isSelected
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
-
                     color: isSelected
                         ? AppColors.green
                         : AppColors.border,
@@ -263,9 +261,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 ),
               ),
 
-              child: const Text(
-                'تأكيد الدفع',
-                style: TextStyle(
+              child: Text(
+                AppStrings.confirmPayment,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -341,4 +339,5 @@ class _PaymentOption {
     required this.assetPath,
     required this.fallbackIcon,
   });
-} 
+}
+

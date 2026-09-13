@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-
 import '../core/app_colors.dart';
 import '../core/app_strings.dart';
-
 import '../home/home_screen.dart';
 import '../home/categories_screen.dart';
 import '../home/cart_screen.dart';
 import '../home/offers_screen.dart';
 import '../home/profile_screen.dart';
-
 import '../services/cart_service.dart';
 
 class MainNavScreen extends StatefulWidget {
@@ -57,22 +54,18 @@ class _MainNavScreenState extends State<MainNavScreen> {
         icon: Icons.person_outline,
         label: AppStrings.myAccount,
       ),
-
       _NavItemData(
         icon: Icons.shopping_cart_outlined,
         label: AppStrings.shoppingCart,
       ),
-
       _NavItemData(
         icon: Icons.home_outlined,
         label: AppStrings.home,
       ),
-
       _NavItemData(
         icon: Icons.grid_view_outlined,
         label: AppStrings.categories,
       ),
-
       _NavItemData(
         icon: Icons.card_giftcard_outlined,
         label: AppStrings.offers,
@@ -142,7 +135,8 @@ class _MainNavScreenState extends State<MainNavScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-color: Colors.black.withValues(alpha: 0.06),              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
               offset: const Offset(0, -2),
             ),
           ],
@@ -158,9 +152,7 @@ color: Colors.black.withValues(alpha: 0.06),              blurRadius: 10,
               children: List.generate(
                 navItems.length,
                 (index) {
-                  final bool selected =
-                      index == currentIndex;
-
+                  final bool selected = index == currentIndex;
                   final item = navItems[index];
 
                   return Expanded(
@@ -196,17 +188,14 @@ color: Colors.black.withValues(alpha: 0.06),              blurRadius: 10,
                                   color: selected
                                       ? AppColors.primary
                                       : Colors.transparent,
-
                                   shape: BoxShape.circle,
                                 ),
 
                                 child: Icon(
                                   item.icon,
-
                                   color: selected
                                       ? Colors.white
                                       : AppColors.textGray,
-
                                   size: 20,
                                 ),
                               ),
@@ -216,10 +205,7 @@ color: Colors.black.withValues(alpha: 0.06),              blurRadius: 10,
                               // ==================================
 
                               if (index == 1 &&
-                                  CartService
-                                          .instance
-                                          .itemCount >
-                                      0)
+                                  CartService.instance.itemCount > 0)
                                 Positioned(
                                   top: -2,
                                   right: -2,
@@ -242,16 +228,11 @@ color: Colors.black.withValues(alpha: 0.06),              blurRadius: 10,
 
                                     child: Text(
                                       '${CartService.instance.itemCount}',
-
-                                      textAlign:
-                                          TextAlign.center,
-
-                                      style:
-                                          const TextStyle(
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 9,
-                                        fontWeight:
-                                            FontWeight.bold,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
@@ -267,12 +248,8 @@ color: Colors.black.withValues(alpha: 0.06),              blurRadius: 10,
 
                           Text(
                             item.label,
-
                             maxLines: 1,
-
-                            overflow:
-                                TextOverflow.ellipsis,
-
+                            overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
 
                             style: TextStyle(
@@ -314,3 +291,4 @@ class _NavItemData {
     required this.label,
   });
 }
+

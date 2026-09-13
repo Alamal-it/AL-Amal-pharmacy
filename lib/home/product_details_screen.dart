@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
+import '../core/app_strings.dart';
 import '../models/product.dart';
 import '../services/favorites_service.dart';
 import '../services/cart_service.dart';
@@ -33,14 +34,19 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           children: [
             // ===== شريط علوي: رجوع + مفضلة =====
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_forward,
-                        color: AppColors.primaryDark),
+                    icon: const Icon(
+                      Icons.arrow_forward,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                   IconButton(
                     onPressed: () {
@@ -72,16 +78,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         Container(
                           width: double.infinity,
                           height: 260,
-color: AppColors.border.withValues(alpha: 0.2),                          child: product.image.isEmpty
-                              ? const Icon(Icons.image_outlined,
-                                  size: 60, color: AppColors.textGray)
+                          color: AppColors.border.withValues(alpha: 0.2),
+                          child: product.image.isEmpty
+                              ? const Icon(
+                                  Icons.image_outlined,
+                                  size: 60,
+                                  color: AppColors.textGray,
+                                )
                               : Image.network(
                                   product.image,
                                   fit: BoxFit.contain,
                                   errorBuilder: (_, __, ___) => const Icon(
-                                      Icons.image_not_supported,
-                                      size: 60,
-                                      color: AppColors.textGray),
+                                    Icons.image_not_supported,
+                                    size: 60,
+                                    color: AppColors.textGray,
+                                  ),
                                 ),
                         ),
                         if (discountPercent != null)
@@ -90,7 +101,9 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                             left: 12,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.red,
                                 borderRadius: BorderRadius.circular(6),
@@ -98,8 +111,10 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                               child: Text(
                                 '-$discountPercent%',
                                 style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,fontWeight: FontWeight.bold),
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
@@ -113,13 +128,14 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                         children: [
                           // ===== الفئة =====
                           Text(
-                            product.category,
+                            AppStrings.categoryName(product.category),
                             style: const TextStyle(
                               color: AppColors.green,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+
                           const SizedBox(height: 6),
 
                           // ===== اسم المنتج =====
@@ -132,13 +148,14 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+
                           const SizedBox(height: 10),
 
                           // ===== السعر =====
                           Row(
                             children: [
                               Text(
-                                '${product.price} ر.س',
+                                '${product.price} ${AppStrings.currency}',
                                 style: const TextStyle(
                                   color: AppColors.primaryDark,
                                   fontSize: 20,
@@ -148,7 +165,7 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                               if (product.oldPrice != null) ...[
                                 const SizedBox(width: 8),
                                 Text(
-                                  '${product.oldPrice} ر.س',
+                                  '${product.oldPrice} ${AppStrings.currency}',
                                   style: const TextStyle(
                                     color: AppColors.textGray,
                                     fontSize: 14,
@@ -160,23 +177,29 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                           ),
 
                           const SizedBox(height: 16),
-                          const Divider(color: AppColors.border),
+
+                          const Divider(
+                            color: AppColors.border,
+                          ),
+
                           const SizedBox(height: 16),
 
-                          // ===== الوصف (نص مؤقت لين يوصل من الـ API) =====
-                          const Text(
-                            'الوصف',
-                            style: TextStyle(
+                          // ===== الوصف =====
+                          Text(
+                            AppStrings.productDescription,
+                            style: const TextStyle(
                               color: AppColors.primaryDark,
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+
                           const SizedBox(height: 8),
-                          const Text(
-                            'سيتم إضافة وصف تفصيلي لهذا المنتج قريباً.',
+
+                          Text(
+                            AppStrings.productDescriptionBody,
                             textAlign: TextAlign.right,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.textGray,
                               fontSize: 12.5,
                               height: 1.6,
@@ -184,15 +207,20 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                           ),
 
                           const SizedBox(height: 20),
-                          const Divider(color: AppColors.border),
+
+                          const Divider(
+                            color: AppColors.border,
+                          ),
+
                           const SizedBox(height: 16),
 
                           // ===== الكمية =====
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                'الكمية',style: TextStyle(
+                              Text(
+                                AppStrings.quantity,
+                                style: const TextStyle(
                                   color: AppColors.primaryDark,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -210,7 +238,8 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 14),
+                                      horizontal: 14,
+                                    ),
                                     child: Text(
                                       '$quantity',
                                       style: const TextStyle(
@@ -247,24 +276,34 @@ color: AppColors.border.withValues(alpha: 0.2),                          child: 
                 child: ElevatedButton.icon(
                   onPressed: () {
                     // ===== إضافة المنتج فعليًا لسلة التسوق =====
-                    CartService.instance.addToCart(product, quantity: quantity);
+                    CartService.instance.addToCart(
+                      product,
+                      quantity: quantity,
+                    );
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content:
-                            Text('تمت إضافة $quantity × ${product.name} للسلة'),
+                        content: Text(
+                          AppStrings.addedToCart(
+                            quantity,
+                            product.name,
+                          ),
+                        ),
                         backgroundColor: AppColors.primary,
                       ),
                     );
                   },
-                  icon: const Icon(Icons.shopping_cart_outlined,
-                      color: Colors.white),
-                  label: const Text(
-                    'أضيفي للسلة',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white),
+                  icon: const Icon(
+                    Icons.shopping_cart_outlined,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    AppStrings.addToCart,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -286,7 +325,10 @@ class _QtyButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _QtyButton({required this.icon, required this.onTap});
+  const _QtyButton({
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -297,10 +339,16 @@ class _QtyButton extends StatelessWidget {
         width: 30,
         height: 30,
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: AppColors.border,
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 16, color: AppColors.primaryDark),
+        child: Icon(
+          icon,
+          size: 16,
+          color: AppColors.primaryDark,
+        ),
       ),
     );
   }

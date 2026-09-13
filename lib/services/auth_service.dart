@@ -1,6 +1,7 @@
+import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../core/app_strings.dart';
 
 class AuthService {
   AuthService._internal();
@@ -82,7 +83,7 @@ class AuthService {
 
       if (idToken == null || idToken.isEmpty) {
         return GoogleLoginResult.failure(
-          'تعذر الحصول على Google ID Token.',
+          AppStrings.googleIdTokenError,
         );
       }
 
@@ -90,7 +91,7 @@ class AuthService {
       googleIdToken = idToken;
 
       // ========================================================
-      // إرسال Google ID Token إلى الـ Backend
+      // إرسال Google ID Token إلى Backend
       // ========================================================
 
       final response = await http.post(
@@ -114,7 +115,7 @@ class AuthService {
 
         if (decoded is! Map<String, dynamic>) {
           return GoogleLoginResult.failure(
-            'استجابة الباكند غير صحيحة.',
+            AppStrings.backendInvalidResponse,
           );
         }
 
@@ -162,7 +163,7 @@ class AuthService {
       // خطأ من الباكند
       // ========================================================
 
-      String message = 'فشل تسجيل الدخول بواسطة Google.';
+      String message = AppStrings.googleLoginFailed;
 
       try {
         final dynamic errorBody = jsonDecode(response.body);
@@ -181,17 +182,17 @@ class AuthService {
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         return GoogleLoginResult.failure(
-          'تم إلغاء تسجيل الدخول.',
+          AppStrings.googleLoginCanceled,
         );
       }
 
       return GoogleLoginResult.failure(
         e.description ??
-            'حدث خطأ أثناء تسجيل الدخول بواسطة Google.',
+            AppStrings.googleLoginError,
       );
-    } catch (e) {
+    } catch (_) {
       return GoogleLoginResult.failure(
-        'حدث خطأ أثناء الاتصال بالخدمة.',
+        AppStrings.authConnectionError,
       );
     }
   }
@@ -218,7 +219,8 @@ class AuthService {
     try {
       await _googleSignIn.signOut();
     } catch (_) {
-      // حتى لو فشل Google signOut، نكمل تنظيف الجلسة المحلية.
+      // حتى لو فشل Google signOut،
+      // نكمل تنظيف الجلسة المحلية.
     }
 
     isLoggedIn = false;

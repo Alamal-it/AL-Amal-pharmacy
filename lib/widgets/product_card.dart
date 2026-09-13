@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
+import '../core/app_strings.dart';
 import '../models/product.dart';
 
 class ProductCard extends StatelessWidget {
@@ -23,7 +24,9 @@ class ProductCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: AppColors.border,
+          ),
         ),
         padding: const EdgeInsets.all(8),
         child: Column(
@@ -55,6 +58,7 @@ class ProductCard extends StatelessWidget {
                           ),
                   ),
                 ),
+
                 if (product.discountPercent != null)
                   Positioned(
                     right: 0,
@@ -69,7 +73,9 @@ class ProductCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        'خصم ${product.discountPercent}%',
+                        AppStrings.discountPercent(
+                          product.discountPercent!,
+                        ),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
@@ -80,7 +86,9 @@ class ProductCard extends StatelessWidget {
                   ),
               ],
             ),
+
             const SizedBox(height: 6),
+
             Text(
               product.name,
               maxLines: 2,
@@ -91,21 +99,25 @@ class ProductCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+
             const SizedBox(height: 4),
+
             Row(
               children: [
                 Text(
-                  '${product.price.toStringAsFixed(0)} ر.س',
+                  '${product.price.toStringAsFixed(0)} ${AppStrings.sarCurrency}',
                   style: const TextStyle(
                     color: AppColors.green,
                     fontSize: 12.5,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 if (product.oldPrice != null) ...[
                   const SizedBox(width: 5),
+
                   Text(
-                    '${product.oldPrice!.toStringAsFixed(0)} ر.س',
+                    '${product.oldPrice!.toStringAsFixed(0)} ${AppStrings.sarCurrency}',
                     style: const TextStyle(
                       color: AppColors.textGray,
                       fontSize: 10,
@@ -115,19 +127,29 @@ class ProductCard extends StatelessWidget {
                 ],
               ],
             ),
+
             const SizedBox(height: 6),
-            SizedBox(width: double.infinity,
+
+            SizedBox(
+              width: double.infinity,
               height: 30,
               child: OutlinedButton.icon(
                 onPressed: onAddToCart,
-                icon: const Icon(Icons.add_shopping_cart, size: 14),
-                label: const Text(
-                  'أضف للسلة',
-                  style: TextStyle(fontSize: 10.5),
+                icon: const Icon(
+                  Icons.add_shopping_cart,
+                  size: 14,
+                ),
+                label: Text(
+                  AppStrings.addToCart,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
+                  side: const BorderSide(
+                    color: AppColors.primary,
+                  ),
                   padding: EdgeInsets.zero,
                 ),
               ),
@@ -138,3 +160,4 @@ class ProductCard extends StatelessWidget {
     );
   }
 }
+

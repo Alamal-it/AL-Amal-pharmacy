@@ -61,6 +61,46 @@ class AppStrings {
       _t('هذا الحقل مطلوب', 'This field is required');
 
   // =========================================================
+  // Google Login - رسائل المصادقة
+  // =========================================================
+
+  static String get googleIdTokenError =>
+      _t(
+        'تعذر الحصول على Google ID Token.',
+        'Unable to get Google ID Token.',
+      );
+
+  static String get backendInvalidResponse =>
+      _t(
+        'استجابة الباكند غير صحيحة.',
+        'Invalid backend response.',
+      );
+
+  static String get googleLoginFailed =>
+      _t(
+        'فشل تسجيل الدخول بواسطة Google.',
+        'Google sign-in failed.',
+      );
+
+  static String get googleLoginCanceled =>
+      _t(
+        'تم إلغاء تسجيل الدخول.',
+        'Sign-in was canceled.',
+      );
+
+  static String get googleLoginError =>
+      _t(
+        'حدث خطأ أثناء تسجيل الدخول بواسطة Google.',
+        'An error occurred while signing in with Google.',
+      );
+
+  static String get authConnectionError =>
+      _t(
+        'حدث خطأ أثناء الاتصال بالخدمة.',
+        'An error occurred while connecting to the service.',
+      );
+
+  // =========================================================
   // حسابي
   // =========================================================
 
@@ -1131,209 +1171,860 @@ class AppStrings {
         'الأطفال',
         'Kids',
       );
-static String get contactInformation =>
-    _t(
-      'معلومات الاتصال',
-      'Contact Information',
-    );
 
-static String get workingHours =>
-    _t(
-      'الأحد - الخميس، من 10 صباحًا حتى 6 مساءً',
-      'Sunday - Thursday, from 10 AM to 6 PM',
-    );
+  static String get contactInformation =>
+      _t(
+        'معلومات الاتصال',
+        'Contact Information',
+      );
 
-static String get unableToOpenApp =>
-    _t(
-      'تعذر فتح التطبيق المطلوب',
-      'Unable to open the required app',
-    );
+  static String get workingHours =>
+      _t(
+        'الأحد - الخميس، من 10 صباحًا حتى 6 مساءً',
+        'Sunday - Thursday, from 10 AM to 6 PM',
+      );
 
-    static String get deliveryAppointment =>
-    _t(
-      'موعد التوصيل',
-      'Delivery Appointment',
-    );
+  static String get unableToOpenApp =>
+      _t(
+        'تعذر فتح التطبيق المطلوب',
+        'Unable to open the required app',
+      );
 
-static String get chooseDay =>
-    _t(
-      'اختاري اليوم',
-      'Choose a day',
-    );
+  static String get deliveryAppointment =>
+      _t(
+        'موعد التوصيل',
+        'Delivery Appointment',
+      );
 
-static String get chooseDeliveryDayDescription =>
-    _t(
-      'حددي اليوم المناسب لاستلام طلبك',
-      'Select a convenient day to receive your order',
-    );
+  static String get chooseDay =>
+      _t(
+        'اختاري اليوم',
+        'Choose a day',
+      );
 
-static String get chooseTime =>
-    _t(
-      'اختاري الوقت',
-      'Choose a time',
-    );
+  static String get chooseDeliveryDayDescription =>
+      _t(
+        'حددي اليوم المناسب لاستلام طلبك',
+        'Select a convenient day to receive your order',
+      );
 
-static String get chooseDeliveryTimeDescription =>
-    _t(
-      'اختاري الفترة المناسبة لتوصيل طلبك',
-      'Select a convenient delivery time',
-    );
+  static String get chooseTime =>
+      _t(
+        'اختاري الوقت',
+        'Choose a time',
+      );
 
-static String get selectedDeliveryDay =>
-    _t(
-      'موعد التوصيل المحدد',
-      'Selected delivery date',
-    );
+  static String get chooseDeliveryTimeDescription =>
+      _t(
+        'اختاري الفترة المناسبة لتوصيل طلبك',
+        'Select a convenient delivery time',
+      );
 
-static String get deliverySummary =>
-    _t(
-      'ملخص موعد التوصيل',
-      'Delivery appointment summary',
-    );
+  static String get selectedDeliveryDay =>
+      _t(
+        'موعد التوصيل المحدد',
+        'Selected delivery date',
+      );
 
-static String get confirmAppointment =>
-    _t(
-      'تأكيد الموعد',
-      'Confirm appointment',
-    );
+  static String get deliverySummary =>
+      _t(
+        'ملخص موعد التوصيل',
+        'Delivery appointment summary',
+      );
 
-static String get selectDeliveryTime =>
-    _t(
-      'يرجى اختيار وقت التوصيل',
-      'Please select a delivery time',
-    );
+  static String get confirmAppointment =>
+      _t(
+        'تأكيد الموعد',
+        'Confirm appointment',
+      );
 
-static String get noDeliveryTimes =>
-    _t(
-      'لا توجد أوقات توصيل متاحة لهذا اليوم',
-      'No delivery times are available for this day',
-    );
+  static String get selectDeliveryTime =>
+      _t(
+        'يرجى اختيار وقت التوصيل',
+        'Please select a delivery time',
+      );
 
-static String get full =>
-    _t(
-      'ممتلئ',
-      'Fully booked',
-    );
+  static String get noDeliveryTimes =>
+      _t(
+        'لا توجد أوقات توصيل متاحة لهذا اليوم',
+        'No delivery times are available for this day',
+      );
 
-static String get today =>
-    _t(
-      'اليوم',
-      'Today',
-    );
+  static String get full =>
+      _t(
+        'ممتلئ',
+        'Fully booked',
+      );
 
-static String get monday =>
-    _t(
-      'الاثنين',
-      'Monday',
-    );
+  static String get today =>
+      _t(
+        'اليوم',
+        'Today',
+      );
 
-static String get tuesday =>
-    _t(
-      'الثلاثاء',
-      'Tuesday',
-    );
+  static String get monday =>
+      _t(
+        'الاثنين',
+        'Monday',
+      );
 
-static String get wednesday =>
-    _t(
-      'الأربعاء',
-      'Wednesday',
-    );
+  static String get tuesday =>
+      _t(
+        'الثلاثاء',
+        'Tuesday',
+      );
 
-static String get thursday =>
-    _t(
-      'الخميس',
-      'Thursday',
-    );
+  static String get wednesday =>
+      _t(
+        'الأربعاء',
+        'Wednesday',
+      );
 
-static String get friday =>
-    _t(
-      'الجمعة',
-      'Friday',
-    );
+  static String get thursday =>
+      _t(
+        'الخميس',
+        'Thursday',
+      );
 
-static String get saturday =>
-    _t(
-      'السبت',
-      'Saturday',
-    );
+  static String get friday =>
+      _t(
+        'الجمعة',
+        'Friday',
+      );
 
-static String get sunday =>
-    _t(
-      'الأحد',
-      'Sunday',
-    );
+  static String get saturday =>
+      _t(
+        'السبت',
+        'Saturday',
+      );
 
-static String get january =>
-    _t(
-      'يناير',
-      'January',
-    );
+  static String get sunday =>
+      _t(
+        'الأحد',
+        'Sunday',
+      );
 
-static String get february =>
-    _t(
-      'فبراير',
-      'February',
-    );
+  static String get january =>
+      _t(
+        'يناير',
+        'January',
+      );
 
-static String get march =>
-    _t(
-      'مارس',
-      'March',
-    );
+  static String get february =>
+      _t(
+        'فبراير',
+        'February',
+      );
 
-static String get april =>
-    _t(
-      'أبريل',
-      'April',
-    );
+  static String get march =>
+      _t(
+        'مارس',
+        'March',
+      );
 
-static String get may =>
-    _t(
-      'مايو',
-      'May',
-    );
+  static String get april =>
+      _t(
+        'أبريل',
+        'April',
+      );
 
-static String get june =>
-    _t(
-      'يونيو',
-      'June',
-    );
+  static String get may =>
+      _t(
+        'مايو',
+        'May',
+      );
 
-static String get july =>
-    _t(
-      'يوليو',
-      'July',
-    );
+  static String get june =>
+      _t(
+        'يونيو',
+        'June',
+      );
 
-static String get august =>
-    _t(
-      'أغسطس',
-      'August',
-    );
+  static String get july =>
+      _t(
+        'يوليو',
+        'July',
+      );
 
-static String get september =>
-    _t(
-      'سبتمبر',
-      'September',
-    );
+  static String get august =>
+      _t(
+        'أغسطس',
+        'August',
+      );
 
-static String get october =>
-    _t(
-      'أكتوبر',
-      'October',
-    );
+  static String get september =>
+      _t(
+        'سبتمبر',
+        'September',
+      );
 
-static String get november =>
-    _t(
-      'نوفمبر',
-      'November',
-    );
+  static String get october =>
+      _t(
+        'أكتوبر',
+        'October',
+      );
 
-static String get december =>
-    _t(
-      'ديسمبر',
-      'December',
-    );
+  static String get november =>
+      _t(
+        'نوفمبر',
+        'November',
+      );
+
+  static String get december =>
+      _t(
+        'ديسمبر',
+        'December',
+      );
+
+  // =========================================================
+  // طرق الدفع الإضافية
+  // =========================================================
+
+  static String get visaMastercard =>
+      _t(
+        'فيزا / ماستركارد',
+        'Visa / Mastercard',
+      );
+
+  static String get tamara =>
+      _t(
+        'تمارا',
+        'Tamara',
+      );
+
+  static String get tabby =>
+      _t(
+        'تابي',
+        'Tabby',
+      );
+
+  static String get internalWallet =>
+      _t(
+        'المحفظة الداخلية',
+        'Internal Wallet',
+      );
+
+  static String get confirmPayment =>
+      _t(
+        'تأكيد الدفع',
+        'Confirm Payment',
+      );
+
+  // =========================================================
+  // سياسة الخصوصية
+  // =========================================================
+
+  static String get privacyIntro =>
+      _t(
+        'نحن على علم بمسؤوليتنا تجاه حماية معلوماتك الشخصية ونأخذ هذا الأمر بجدية تامة. نقوم بتخزين ومعالجة معلوماتك الشخصية من خلال خوادمنا المحمية بأجهزة وبرامج ذات تقنية أمنية عالية.\n\n'
+        'في حال اعتراضك على معالجتنا لمعلوماتك الشخصية، يمكنك إرسال طلبك إلى admin@alamalph.com أو تجنب استخدام خدمات التطبيق.',
+        'We understand our responsibility to protect your personal information and take this matter very seriously. We store and process your personal information through our servers, which are protected by advanced security hardware and software.\n\n'
+        'If you object to the way we process your personal information, you may contact us at admin@alamalph.com or choose not to use the application services.',
+      );
+
+  static String get privacyRegistrationTitle =>
+      _t(
+        'التسجيل — حسابي الشخصي',
+        'Registration — My Account',
+      );
+
+  static String get privacyRegistrationBody =>
+      _t(
+        'تتضمن عملية التسجيل معلوماتك الشخصية التي تزودنا بها لإتمام معاملاتك وللتواصل معك. تشكل هذه المعلومات جزءًا من سجلك الخاص لتعاملاتك مع خدماتنا.\n\n'
+        'أنتِ مسؤولة عن المحافظة على سرية حسابك الشخصي وكلمة المرور، وعن جميع العمليات التي تتم من خلال حسابك. في حال الشك بوجود عمليات مشبوهة، يرجى إخطارنا فورًا.',
+        'The registration process includes the personal information you provide to complete your transactions and communicate with you. This information forms part of your personal record of interactions with our services.\n\n'
+        'You are responsible for maintaining the confidentiality of your account and password, as well as for all activities carried out through your account. If you suspect any suspicious activity, please notify us immediately.',
+      );
+
+  static String get privacyDeleteTitle =>
+      _t(
+        'إلغاء حسابك الشخصي',
+        'Deleting Your Account',
+      );
+
+  static String get privacyDeleteBody =>
+      _t(
+        'تستطيعين في أي وقت إلغاء وحذف حسابك الشخصي، كما يحق لنا حذف الحساب في أي وقت إذا تأكدنا أنه احتيالي أو أن استخدامه لا يتوافق مع سياسة الخصوصية وشروط الاستخدام لدينا.',
+        'You may cancel and delete your personal account at any time. We also reserve the right to delete an account if we determine that it is fraudulent or that its use does not comply with our Privacy Policy and Terms of Use.',
+      );
+
+  static String get privacyElectronicTitle =>
+      _t(
+        'التواصل الإلكتروني',
+        'Electronic Communications',
+      );
+
+  static String get privacyElectronicBody =>
+      _t(
+        'باستخدامك للتطبيق وخدماتنا الإلكترونية، فإنك توافقين على استقبال رسائلنا الإلكترونية بجميع أشكالها (بريد إلكتروني، نشرات دورية، إشعارات). يمكنك إلغاء استلام الرسائل الترويجية بالضغط على خيار إلغاء الاشتراك المتوفر أسفل الرسائل.\n\n'
+        'يحق لنا مراقبة وتسجيل وحفظ أي تواصل معك لأغراض تدريبية بهدف تحسين جودة الخدمة المقدمة.',
+        'By using the application and our electronic services, you agree to receive our electronic communications in all forms, including emails, newsletters, and notifications. You may unsubscribe from promotional messages by selecting the unsubscribe option available at the bottom of the messages.\n\n'
+        'We may monitor, record, and retain communications with you for training purposes in order to improve the quality of the service provided.',
+      );
+
+  static String get privacyCookiesTitle =>
+      _t(
+        'ملفات السجل وملفات تعريف الارتباط',
+        'Log Files & Cookies',
+      );
+
+  static String get privacyCookiesBody =>
+      _t(
+        'نقوم بجمع بيانات تشمل عنوان بروتوكول الإنترنت (IP) الخاص بك، ومزود خدمة الإنترنت، والمتصفح المستخدم، ووقت وصفحات الزيارة.\n\n'
+        'نستخدم ملفات تعريف الارتباط (Cookies) لتحسين تجربة الاستخدام وتخصيصها، مثل حفظ تفضيلاتك الشخصية وتسجيل الدخول التلقائي لبعض الميزات.',
+        'We collect data including your Internet Protocol (IP) address, Internet service provider, browser type, visit time, and the pages you visit.\n\n'
+        'We use cookies to improve and personalize your experience, such as saving your preferences and automatically signing you in to certain features.',
+      );
+
+  static String get privacyContactTitle =>
+      _t(
+        'للتواصل معنا',
+        'Contact Us',
+      );
+
+  static String get privacyContactBody =>
+      _t(
+        'إن كانت لديك أي استفسارات بخصوص سياسة الخصوصية، يمكنك التواصل معنا عبر:\n\n'
+        'البريد الإلكتروني: admin@alamalph.com\n\n'
+        'العنوان: مدينة جازان، المنطقة الصناعية، جازان 82511، المملكة العربية السعودية.',
+        'If you have any questions regarding our Privacy Policy, you can contact us through:\n\n'
+        'Email: admin@alamalph.com\n\n'
+        'Address: Jazan City, Industrial Area, Jazan 82511, Saudi Arabia.',
+      );
+
+  // =========================================================
+  // المنتج
+  // =========================================================
+
+  static String get productDescription =>
+      _t('الوصف', 'Description');
+
+  static String get productDescriptionBody =>
+      _t(
+        'سيتم إضافة وصف تفصيلي لهذا المنتج قريباً.',
+        'A detailed description for this product will be added soon.',
+      );
+
+  static String get quantity =>
+      _t('الكمية', 'Quantity');
+
+  static String get addToCart =>
+      _t('أضيفي للسلة', 'Add to Cart');
+
+  static String addedToCart(int quantity, String productName) =>
+      _t(
+        'تمت إضافة $quantity × $productName للسلة',
+        '$quantity × $productName has been added to your cart',
+      );
+
+  // =========================================================
+  // الشروط والأحكام
+  // =========================================================
+
+  static String get termsIntro =>
+      _t(
+        'أهلاً بكم في تطبيق صيدليات الأمل الإلكتروني. باستخدامك للتطبيق فإنك تقرّين وتوافقين على أنك قرأتِ وفهمتِ بنود وأحكام هذه الاتفاقية وطريقة استخدام التطبيق، وأنك بكامل الأهلية المعتبرة شرعًا وقانونًا.\n\n'
+        'هذه الشروط قابلة للتعديل من قبلنا في أي وقت، واستمرار استخدامك للتطبيق بعد نشر أي تغيير يعني موافقتك على الشروط المعدّلة.',
+        'Welcome to Alamal Pharmacies electronic application. By using the application, you acknowledge and agree that you have read and understood the terms and conditions of this agreement and how to use the application, and that you have the full legal capacity required by law.\n\n'
+        'These terms may be amended by us at any time. Your continued use of the application after any changes are published means that you accept the amended terms.',
+      );
+
+  static String get termsRegistrationTitle =>
+      _t('شروط التسجيل', 'Registration Requirements');
+
+  static String get termsRegistrationBody =>
+      _t(
+        '• أن تكوني بالغة السن القانونية (18 عامًا) لتتمكني من شراء المنتجات.\n'
+        '• أن تكوني قادرة على تقديم عنوان داخل المملكة العربية السعودية لتسليم المنتجات.\n'
+        '• لا يحق لأي شخص استخدام التطبيق إذا أُلغيت عضويته من قبل صيدلية الأمل.\n'
+        '• لا يحق لأي عميل استخدام بريد إلكتروني واحد أو رقم جوال واحد لفتح أكثر من حساب.',
+        '• You must be of legal age (18 years or older) to purchase products.\n'
+        '• You must be able to provide an address within the Kingdom of Saudi Arabia for product delivery.\n'
+        '• No person may use the application if their membership has been cancelled by Alamal Pharmacy.\n'
+        '• A customer may not use the same email address or mobile number to create more than one account.',
+      );
+
+  static String get termsCustomerTitle =>
+      _t('التزامات العميل', 'Customer Obligations');
+
+  static String get termsCustomerBody =>
+      _t(
+        '• المحافظة على سرية حسابك وكلمة المرور، وتحمل مسؤولية جميع الأنشطة التي تتم من خلاله.\n'
+        '• إخطارنا فورًا عن أي استخدام غير مصرح به لحسابك.\n'
+        '• تقديم معلومات كاملة وحقيقية ودقيقة عن نفسك.\n'
+        '• عدم استخدام التطبيق بما يخالف الأنظمة والقوانين المعمول بها في المملكة العربية السعودية.',
+        '• Maintain the confidentiality of your account and password and take responsibility for all activities carried out through your account.\n'
+        '• Notify us immediately of any unauthorized use of your account.\n'
+        '• Provide complete, truthful, and accurate information about yourself.\n'
+        '• Do not use the application in violation of the laws and regulations applicable in the Kingdom of Saudi Arabia.',
+      );
+
+  static String get termsPaymentTitle =>
+      _t('الدفع', 'Payment');
+
+  static String get termsPaymentBody =>
+      _t(
+        'يوفر التطبيق إمكانية الدفع عند الاستلام أو عبر الإنترنت. جميع عمليات الدفع تتم بالريال السعودي، ويتم قبول البطاقات الائتمانية الصادرة من بنوك سعودية عبر بوابة الدفع الإلكترونية المعتمدة.\n\n'
+        'نحن لا نقوم بتخزين معلومات بطاقتك الائتمانية على التطبيق، وجميع البيانات المدخلة عبر بوابة الدفع يتم تشفيرها لأغراض الحماية الأمنية.',
+        'The application provides payment by cash on delivery or online. All payments are made in Saudi Riyals, and credit cards issued by Saudi banks are accepted through the approved electronic payment gateway.\n\n'
+        'We do not store your credit card information in the application. All data entered through the payment gateway is encrypted for security purposes.',
+      );
+
+  static String get termsMedicineTitle =>
+      _t(
+        'تنبيه هام حول منتجات الأدوية',
+        'Important Notice About Medicines',
+      );
+
+  static String get termsMedicineBody =>
+      _t(
+        'يجب استشارة الطبيب المختص حول كيفية استخدام الأدوية. لا نبيع الأدوية التي تتطلب وصفة طبية إلا بوصفة، ويحق لنا إيقاف أي طلب نتأكد أنه كميات بيع وليست كميات استخدام.',
+        'You should consult a qualified physician regarding the proper use of medicines. We do not sell prescription medicines without a valid prescription, and we reserve the right to stop any order if we determine that the quantities are intended for resale rather than personal use.',
+      );
+
+  static String get termsCancelOrderTitle =>
+      _t('إلغاء الطلب', 'Order Cancellation');
+
+  static String get termsCancelOrderBody =>
+      _t(
+        'يحق لصيدلية الأمل إلغاء الطلب في حال: رفض عملية الدفع، تأخر العميل عن الدفع لأكثر من 12 ساعة، خطأ في عنوان التوصيل أو معلومات الاتصال، أو عدم استلام الطلب خلال المدة المحددة.\n\n'
+        'يحق للعميل إلغاء طلبه قبل شحنه بالتواصل معنا مباشرة.',
+        'Alamal Pharmacy reserves the right to cancel an order in cases including: payment rejection, failure to complete payment within 12 hours, an incorrect delivery address or contact information, or failure to receive the order within the specified period.\n\n'
+        'The customer may cancel an order before it is shipped by contacting us directly.',
+      );
+
+  static String get termsReturnTitle =>
+      _t(
+        'الاسترجاع والاستبدال ورد المدفوعات',
+        'Returns, Exchanges & Refunds',
+      );
+
+  static String get termsReturnBody =>
+      _t(
+        'في حال عدم رضاك عن المنتج أو وجود خلل فيه، يمكنك خلال 3 أيام من الاستلام طلب إعادة المنتج، ولن يتم رد المبلغ إلا بعد استلامنا للمنتج وفحص حالته.\n\n'
+        'استثناءات لا تُرجع أو تُستبدل: منتجات الصحة والجمال (أجهزة حلاقة، عناية بالفم والأسنان)، الأصناف التي تحتاج تبريدًا (كالإنسولين)، أصناف درجة الحرارة الثابتة (حليب وأكل الأطفال)، والمنتجات المصروفة عبر التأمين الطبي.',
+        'If you are not satisfied with a product or if it has a defect, you may request a return within 3 days of receiving it. A refund will only be issued after we receive the product and inspect its condition.\n\n'
+        'Non-returnable or non-exchangeable items include: health and beauty products (such as shaving devices and oral and dental care products), products requiring refrigeration (such as insulin), temperature-sensitive products (such as infant formula and baby food), and products dispensed through medical insurance.',
+      );
+
+  static String get termsWarrantyTitle =>
+      _t('الضمان', 'Warranty');
+
+  static String get termsWarrantyBody =>
+      _t(
+        'يكون الضمان فقط للأجهزة الطبية حسب ضمان الوكيل.',
+        'Warranty applies only to medical devices according to the manufacturer or authorized distributor warranty.',
+      );
+
+  static String get termsLawTitle =>
+      _t('القانون المنظم', 'Governing Law');
+
+  static String get termsLawBody =>
+      _t(
+        'تخضع جميع شروط الخدمة وتُفسر وفقًا للقوانين المعمول بها في المملكة العربية السعودية، وفي حال نشوء أي نزاع يتم اللجوء للتحكيم.',
+        'All terms of service are governed by and interpreted in accordance with the laws applicable in the Kingdom of Saudi Arabia. In the event of any dispute, the matter shall be referred to arbitration.',
+      );
+
+  static String get termsContactTitle =>
+      _t('للتواصل معنا', 'Contact Us');
+
+  static String get termsContactBody =>
+      _t(
+        'البريد الإلكتروني: admin@alamalph.com\n\n'
+        'العنوان: مدينة جازان، المنطقة الصناعية، جازان 82511، المملكة العربية السعودية.',
+        'Email: admin@alamalph.com\n\n'
+        'Address: Jazan City, Industrial Area, Jazan 82511, Saudi Arabia.',
+      );
+
+  // =========================================================
+  // وصفتي
+  // =========================================================
+
+  static String get wasfaty =>
+      _t('وصفتي', 'My Prescription');
+
+  static String get prescriptionDescription =>
+      _t(
+        'ارفعي صورة واضحة لوصفتك الطبية وسيقوم فريقنا بمراجعتها وتجهيز طلبك',
+        'Upload a clear photo of your prescription and our team will review it and prepare your order.',
+      );
+
+  static String get takePrescriptionPhoto =>
+      _t(
+        'التقاط صورة بالكاميرا',
+        'Take a Photo with Camera',
+      );
+
+  static String get chooseFromGallery =>
+      _t(
+        'اختيار من المعرض',
+        'Choose from Gallery',
+      );
+
+  static String get attachPrescription =>
+      _t(
+        'اضغطي لإرفاق صورة الوصفة',
+        'Tap to Attach Prescription',
+      );
+
+  static String get cameraOrGallery =>
+      _t(
+        'كاميرا أو من المعرض',
+        'Camera or Gallery',
+      );
+
+  static String get paymentMethodTitle =>
+      _t(
+        'طريقة الدفع',
+        'Payment Method',
+      );
+
+  static String get cashPayment =>
+      _t(
+        'نقدي',
+        'Cash',
+      );
+
+  static String get medicalInsurance =>
+      _t(
+        'تأمين طبي',
+        'Medical Insurance',
+      );
+
+  static String get insuranceInformation =>
+      _t(
+        'بيانات التأمين',
+        'Insurance Information',
+      );
+
+  static String get selectInsuranceCompany =>
+      _t(
+        'اختاري شركة التأمين',
+        'Select Insurance Company',
+      );
+
+  static String get insuranceMembershipNumber =>
+      _t(
+        'رقم العضوية / الوثيقة التأمينية',
+        'Membership / Insurance Policy Number',
+      );
+
+  static String get idOrIqamaNumber =>
+      _t(
+        'رقم الهوية / الإقامة',
+        'National ID / Iqama Number',
+      );
+
+  static String get insuranceVerificationNotice =>
+      _t(
+        'سيتم التحقق من تغطية التأمين قبل تجهيز الطلب',
+        'Your insurance coverage will be verified before preparing the order.',
+      );
+
+  static String get additionalNotesOptional =>
+      _t(
+        'ملاحظات إضافية (اختياري)',
+        'Additional Notes (Optional)',
+      );
+
+  static String get prescriptionNoteHint =>
+      _t(
+        'مثال: أحتاج توصيل بسرعة',
+        'Example: I need fast delivery',
+      );
+
+  static String get sendPrescription =>
+      _t(
+        'إرسال الوصفة',
+        'Submit Prescription',
+      );
+
+  static String get prescriptionSentSuccessfully =>
+      _t(
+        'تم إرسال وصفتك بنجاح',
+        'Your prescription has been submitted successfully',
+      );
+
+  static String get insuranceCoverageCheckingMessage =>
+      _t(
+        'سيتم التحقق من التغطية التأمينية والتواصل معك',
+        'Your insurance coverage will be verified and we will contact you.',
+      );
+
+  static String get prescriptionReviewMessage =>
+      _t(
+        'سيتم مراجعتها والتواصل معك قريباً',
+        'Your prescription will be reviewed and we will contact you soon.',
+      );
+
+  static String get doneButton =>
+      _t(
+        'تم',
+        'Done',
+      );
+
+  static String get attachPrescriptionFirst =>
+      _t(
+        'الرجاء إرفاق صورة الوصفة أولاً',
+        'Please attach a prescription photo first.',
+      );
+
+  static String get selectInsuranceFirst =>
+      _t(
+        'الرجاء اختيار شركة التأمين',
+        'Please select an insurance company.',
+      );
+
+  static String get completeInsuranceData =>
+      _t(
+        'الرجاء تعبئة بيانات التأمين كاملة',
+        'Please complete all insurance information.',
+      );
+
+  static String get insuranceBupa =>
+      _t(
+        'بوبا العربية',
+        'Bupa Arabia',
+      );
+
+  static String get insuranceTawuniya =>
+      _t(
+        'التعاونية',
+        'Tawuniya',
+      );
+
+  static String get insuranceMedgulf =>
+      _t(
+        'ميدغلف',
+        'MedGulf',
+      );
+
+  static String get insuranceWalaa =>
+      _t(
+        'ولاء للتأمين',
+        'Walaa Insurance',
+      );
+
+  static String get insuranceAlRajhi =>
+      _t(
+        'الراجحي تكافل',
+        'Al Rajhi Takaful',
+      );
+
+  static String get insuranceOther =>
+      _t(
+        'أخرى',
+        'Other',
+      );
+
+  // =========================================================
+  // Delivery Option Sheet
+  // =========================================================
+
+  static String get chooseDeliveryOrPickup =>
+      _t(
+        'اختر التوصيل أو الاستلام',
+        'Choose delivery or pickup',
+      );
+
+  static String get productAvailabilityDependsOnLocation =>
+      _t(
+        'توفّر المنتجات يعتمد على مكانك',
+        'Product availability depends on your location',
+      );
+
+  static String get homeDelivery =>
+      _t(
+        'توصيل للمنزل',
+        'Home delivery',
+      );
+
+  static String get orderArrivesIn30To60Minutes =>
+      _t(
+        'يصلك طلبك خلال 30-60 دقيقة',
+        'Your order arrives within 30–60 minutes',
+      );
+
+  static String get pickupFromBranchOption =>
+      _t(
+        'استلام من الفرع',
+        'Pickup from branch',
+      );
+
+  static String get pickupFromNearestBranchFree =>
+      _t(
+        'استلمي طلبك من أقرب فرع، بدون رسوم',
+        'Pick up your order from the nearest branch, free of charge',
+      );
+
+  static String get deliveryAddress =>
+      _t(
+        'عنوان التوصيل',
+        'Delivery address',
+      );
+
+  static String get addNewAddress =>
+      _t(
+        'أضف عنوانا جديدا',
+        'Add a new address',
+      );
+
+  static String get continueButton =>
+      _t(
+        'متابعة',
+        'Continue',
+      );
+
+  // =========================================================
+  // Product Card
+  // =========================================================
+
+  static String discountPercent(int percent) =>
+      _t(
+        'خصم $percent%',
+        '$percent% OFF',
+      );
+
+  static String get sarCurrency =>
+      _t(
+        'ر.س',
+        'SAR',
+      );
+
+  // =========================================================
+  // Quick Login Sheet
+  // =========================================================
+
+  static String get quickLoginTitle =>
+      _t(
+        'سجّلي الدخول لإكمال الطلب',
+        'Sign in to complete your order',
+      );
+
+  static String get quickLoginSubtitle =>
+      _t(
+        'نحتاج اسمك ورقم جوالك بس عشان نكمل طلبك ونتواصل معك',
+        'We need your name and phone number to complete your order and contact you',
+      );
+
+  static String get quickLoginNameHint =>
+      _t(
+        'الاسم',
+        'Name',
+      );
+
+  static String get quickLoginNameRequired =>
+      _t(
+        'يرجى إدخال الاسم',
+        'Please enter your name',
+      );
+
+  static String get quickLoginPhoneHint =>
+      _t(
+        'رقم الجوال',
+        'Phone number',
+      );
+
+  static String get quickLoginPhoneRequired =>
+      _t(
+        'يرجى إدخال رقم الجوال',
+        'Please enter your phone number',
+      );
+
+  static String get continueOrder =>
+      _t(
+        'متابعة الطلب',
+        'Continue order',
+      );
+
+  // =========================================================
+  // الأسئلة الشائعة FAQ
+  // =========================================================
+
+  static String get faqPrescriptionQuestion =>
+      _t(
+        'كيف أقدر أطلب دواء يحتاج وصفة طبية؟',
+        'How can I order a medicine that requires a prescription?',
+      );
+
+  static String get faqPrescriptionAnswer =>
+      _t(
+        'من الصفحة الرئيسية اضغطي على "رفع وصفة"، صوّري الوصفة أو اختاريها من المعرض، وسيقوم فريقنا بمراجعتها والتواصل معك لإتمام الطلب.',
+        'From the home page, tap "Upload Prescription", take a photo of the prescription or choose it from the gallery. Our team will review it and contact you to complete the order.',
+      );
+
+  static String get faqDeliveryQuestion =>
+      _t(
+        'كم تستغرق مدة التوصيل؟',
+        'How long does delivery take?',
+      );
+
+  static String get faqDeliveryAnswer =>
+      _t(
+        'عادة يصل طلبك خلال 30 إلى 60 دقيقة داخل نطاق التغطية، وتقدرين تحددين موعد توصيل مناسب لك عند إتمام الطلب.',
+        'Your order usually arrives within 30 to 60 minutes within the coverage area. You can also choose a suitable delivery time when completing your order.',
+      );
+
+  static String get faqPickupQuestion =>
+      _t(
+        'هل أقدر أستلم طلبي من الفرع مباشرة؟',
+        'Can I pick up my order directly from a branch?',
+      );
+
+  static String get faqPickupAnswer =>
+      _t(
+        'نعم، عند إتمام الشراء اختاري "استلام من الفرع" وحددي أقرب فرع لك من الخريطة، وسيكون طلبك جاهزاً للاستلام في الوقت المحدد.',
+        'Yes. When completing your purchase, choose "Pickup from Branch" and select your nearest branch on the map. Your order will be ready for pickup at the selected time.',
+      );
+
+  static String get faqPaymentQuestion =>
+      _t(
+        'ما هي طرق الدفع المتاحة؟',
+        'What payment methods are available?',
+      );
+
+  static String get faqPaymentAnswer =>
+      _t(
+        'نوفر الدفع عبر مدى، فيزا/ماستركارد، Apple Pay، الدفع عند الاستلام، بالإضافة إلى خدمتي تمارا وتابي للتقسيط.',
+        'We offer Mada, Visa/Mastercard, Apple Pay, Cash on Delivery, as well as Tamara and Tabby installment services.',
+      );
+
+  static String get faqReturnQuestion =>
+      _t(
+        'هل أقدر أرجع أو أستبدل منتج بعد الاستلام؟',
+        'Can I return or exchange a product after receiving it?',
+      );
+
+  static String get faqReturnAnswer =>
+      _t(
+        'نعم، يمكنك التواصل مع خدمة العملاء خلال 24 ساعة من الاستلام لطلب الإرجاع أو الاستبدال وفق سياسة الاستبدال والاسترجاع الخاصة بنا.',
+        'Yes. You can contact customer service within 24 hours of receiving the product to request a return or exchange according to our return and exchange policy.',
+      );
+
+  static String get faqOrderQuestion =>
+      _t(
+        'كيف أتابع حالة طلبي؟',
+        'How can I track my order status?',
+      );
+
+  static String get faqOrderAnswer =>
+      _t(
+        'من صفحة "حسابي" اضغطي على "طلباتي" لمتابعة حالة كل طلب لحظة بلحظة، من التجهيز وحتى التسليم.',
+        'From the "My Account" page, tap "My Orders" to follow the status of each order from preparation until delivery.',
+      );
+
+  static String get faqCoverageQuestion =>
+      _t(
+        'هل التطبيق متوفر في كل مناطق المملكة؟',
+        'Is the app available in all regions of the Kingdom?',
+      );
+
+  static String get faqCoverageAnswer =>
+      _t(
+        'حالياً نغطي المنطقة الجنوبية من المملكة العربية السعودية عبر شبكة فروعنا، ونعمل على التوسع تباعاً لمناطق أخرى.',
+        'We currently cover the southern region of Saudi Arabia through our branch network and are gradually expanding to other areas.',
+      );
+
   // =========================================================
   // تحويل اسم الفئة إلى اللغة الحالية
   // =========================================================
@@ -1399,9 +2090,6 @@ static String get december =>
 
       default:
         return category;
-
-
-        
     }
   }
 }

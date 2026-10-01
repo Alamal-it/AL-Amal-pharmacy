@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../core/app_colors.dart';
 import '../core/app_strings.dart';
 import '../models/product.dart';
@@ -13,7 +12,6 @@ import '../widgets/delivery_option_sheet.dart';
 import '../models/delivery_address.dart';
 import 'categories_screen.dart';
 import 'favorites_screen.dart';
-import 'upload_prescription_screen.dart';
 import 'orders_screen.dart';
 import 'category_products_screen.dart';
 import 'notifications_screen.dart';
@@ -62,19 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
       buttonText: 'اطلبي الآن',
       color: AppColors.green,
       icon: Icons.local_shipping_outlined,
-    ),
-
-    // ==========================================================
-    // بنر وصفتي
-    // ==========================================================
-
-    PromoBanner(
-      title: '',
-      subtitle: '',
-      buttonText: '',
-      color: AppColors.primary,
-      icon: Icons.receipt_long_outlined,
-      imagePath: 'lib/assets/wasfaty_banner.png',
     ),
   ];
 
@@ -275,19 +260,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ============================================================
-  // فتح صفحة وصفتي
-  // ============================================================
-
-  void openPrescription() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const UploadPrescriptionScreen(),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // ملاحظة:
@@ -313,7 +285,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               sliver: SliverToBoxAdapter(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     // ==================================================
                     // الصف العلوي
@@ -326,7 +299,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: goToLogin,
                                 style: TextButton.styleFrom(
                                   backgroundColor:
-                                      AppColors.green.withValues(alpha: 0.12),
+                                      AppColors.green.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   padding:
                                       const EdgeInsets.symmetric(
                                     horizontal: 14,
@@ -348,7 +323,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   style: const TextStyle(
                                     color: AppColors.green,
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight:
+                                        FontWeight.w700,
                                   ),
                                 ),
                               )
@@ -412,9 +388,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             TextOverflow.ellipsis,
                                       ),
                                     ),
-
                                     const SizedBox(width: 4),
-
                                     const Icon(
                                       Icons
                                           .keyboard_arrow_down,
@@ -424,13 +398,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ],
                                 ),
-
                                 Text(
                                   deliveryMode ==
                                           DeliveryMode.pickup
                                       ? AppStrings
                                           .chooseNearestPharmacy
-                                      : selectedAddress != null
+                                      : selectedAddress !=
+                                              null
                                           ? '${selectedAddress!.addressLine}, ${selectedAddress!.city}'
                                           : AppStrings
                                               .defaultAddress,
@@ -585,15 +559,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       PromoBannerCarousel(
                         banners: banners,
 
-                        // الضغط على البنر كامل
-                        onTapBanner: (banner) {
-                          if (banner.imagePath ==
-                              'lib/assets/wasfaty_banner.png') {
-                            openPrescription();
-                          }
-                        },
+                        // البنرات العادية فقط
+                        onTapBanner: (banner) {},
 
-                        // الضغط على زر البنرات العادية
+                        // الضغط على زر البنرات
                         onTapButton: (banner) {
                           // نقدر نربط أزرار البنرات
                           // الأخرى هنا لاحقًا.
@@ -648,14 +617,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 'أجهزة طبية',
                               );
                             },
-                          ),
-
-                          CategoryIconItem(
-                            icon: Icons
-                                .camera_alt_outlined,
-                            label: AppStrings
-                                .uploadPrescription,
-                            onTap: openPrescription,
                           ),
                         ],
                       ),

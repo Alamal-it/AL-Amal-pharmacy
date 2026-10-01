@@ -1,8 +1,34 @@
 import '../models/product.dart';
+import 'api_client.dart';
+import '../core/api_config.dart';
 
 class ProductService {
-  // TODO: استبدال هذا بـ GET /products من الـ API لما يجهزه المدير.
+  final ApiClient _client = ApiClient.instance;
+
+  // ضعي false هنا يوم يجهز الـ API الحقيقي، وحينها لازم تكملي دالة _fetchFromApi
+  // وتعدلي Product.fromJson بملف models/product.dart لتطابق شكل الـ JSON الحقيقي.
+  static const bool useMockData = true;
+
   Future<List<Product>> getProducts() async {
+    if (useMockData) {
+      return _getMockProducts();
+    }
+
+    return _fetchFromApi();
+  }
+
+  // TODO: لما يوصلك شكل الـ JSON الحقيقي من هاني، تأكدي إن Product.fromJson
+  // بملف models/product.dart يطابق أسماء الحقول بالضبط.
+  Future<List<Product>> _fetchFromApi() async {
+    final response = await _client.get(ApiConfig.products);
+
+    final List<dynamic> list =
+        response is List ? response : (response['data'] ?? []);
+
+    return list.map((json) => Product.fromJson(json)).toList();
+  }
+
+  Future<List<Product>> _getMockProducts() async {
     await Future.delayed(const Duration(milliseconds: 500));
 
     return const [

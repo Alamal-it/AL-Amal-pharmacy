@@ -17,8 +17,22 @@ class Product {
     this.stock = 10,
   });
 
+  // تحويل بيانات الـ API إلى Product
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      id: json['id'].toString(),
+      name: json['name']?.toString() ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      oldPrice: (json['oldPrice'] as num?)?.toDouble(),
+      image: json['image']?.toString() ?? '',
+      category: json['category']?.toString() ?? '',
+      stock: (json['stock'] as num?)?.toInt() ?? 10,
+    );
+  }
+
   int? get discountPercent {
     if (oldPrice == null || oldPrice! <= price) return null;
+
     return (((oldPrice! - price) / oldPrice!) * 100).round();
   }
 }

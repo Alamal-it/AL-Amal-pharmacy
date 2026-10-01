@@ -112,10 +112,11 @@ class _AddAddressMapScreenState extends State<AddAddressMapScreen> {
         return;
       }
 
-      // الحصول على الموقع الحقيقي
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+    final position = await Geolocator.getCurrentPosition(
+  locationSettings: const LocationSettings(
+    accuracy: LocationAccuracy.high,
+  ),
+);
 
       final target = LatLng(
         position.latitude,

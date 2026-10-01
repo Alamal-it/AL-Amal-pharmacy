@@ -21,7 +21,6 @@ import 'delivery_info_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_conditions_screen.dart';
 import 'loyalty_points_screen.dart';
-import 'my_prescriptions_screen.dart';
 import 'family_members_screen.dart';
 import 'contact_us_screen.dart';
 
@@ -496,20 +495,7 @@ selectedColor: AppColors.primary.withValues(alpha: 0.12),      backgroundColor: 
             },
           ),
 
-          _MenuTile(
-            icon: Icons.camera_alt_outlined,
-            label: AppStrings.myPrescriptions,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const MyPrescriptionsScreen(),
-                ),
-              );
-            },
-          ),
-
+         
           _MenuTile(
             icon: Icons.groups_outlined,
             label: AppStrings.familyMembers,

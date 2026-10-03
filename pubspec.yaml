@@ -20,23 +20,19 @@ dependencies:
   provider: ^6.1.2
   shared_preferences: ^2.5.3
   cupertino_icons: ^1.0.8
-
   google_maps_flutter: ^2.12.3
   geocoding: ^4.0.0
   geolocator: ^13.0.2
-
   image_picker: ^1.1.2
   url_launcher: ^6.3.1
-
   google_sign_in: ^7.1.1
   http: ^1.6.0
   open_filex: ^4.5.0
   path_provider: ^2.1.4
-
   firebase_core: ^4.14.0
   firebase_auth: ^6.6.1
-
   sign_in_with_apple: ^7.0.1
+  share_plus: ^10.1.4
 
 dev_dependencies:
   flutter_test:
@@ -61,4 +57,3 @@ flutter:
           weight: 500
         - asset: lib/fonts/Cairo-Bold.ttf
           weight: 700
-

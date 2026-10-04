@@ -48,6 +48,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool loading = false;
 
+  // يمنع تنفيذ الانتقال أكثر من مرة
+  bool _isNavigating = false;
+
+  // يمنع فتح أكثر من نافذة OTP
+  bool _otpDialogOpen = false;
+
   // ============================================================
   // Web Client ID
   // ============================================================
@@ -114,6 +120,13 @@ class _LoginScreenState extends State<LoginScreen> {
   // ============================================================
 
   Future<void> login() async {
+    // منع الضغط المتكرر
+    if (loading ||
+        _isNavigating ||
+        _otpDialogOpen) {
+      return;
+    }
+
     FocusScope.of(context).unfocus();
 
     if (!formKey.currentState!.validate()) {
@@ -124,9 +137,11 @@ class _LoginScreenState extends State<LoginScreen> {
       phoneController.text,
     );
 
-    setState(() {
-      loading = true;
-    });
+    if (mounted) {
+      setState(() {
+        loading = true;
+      });
+    }
 
     debugPrint('====================================');
     debugPrint('Firebase Phone Login');
@@ -143,12 +158,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
         verificationCompleted:
             (PhoneAuthCredential credential) async {
+          // إذا كان هناك انتقال أو نافذة OTP
+          // لا ننفذ العملية مرة أخرى
+          if (_isNavigating) {
+            return;
+          }
+
           try {
             await _auth.signInWithCredential(
               credential,
             );
 
-            if (!mounted) {
+            if (!mounted || _isNavigating) {
               return;
             }
 
@@ -159,7 +180,24 @@ class _LoginScreenState extends State<LoginScreen> {
               loading = false;
             });
 
-            _goToMainScreen();
+            _isNavigating = true;
+
+            // إذا كانت نافذة OTP مفتوحة
+            // نغلقها أولًا
+            if (_otpDialogOpen) {
+              Navigator.of(context).pop();
+              _otpDialogOpen = false;
+            }
+
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) {
+                if (!mounted) {
+                  return;
+                }
+
+                _goToMainScreen();
+              },
+            );
           } on FirebaseAuthException catch (e) {
             if (!mounted) {
               return;
@@ -179,9 +217,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
         verificationFailed:
             (FirebaseAuthException e) {
-          debugPrint('Firebase Phone Auth Error');
-          debugPrint('Code: ${e.code}');
-          debugPrint('Message: ${e.message}');
+          debugPrint(
+            'Firebase Phone Auth Error',
+          );
+
+          debugPrint(
+            'Code: ${e.code}',
+          );
+
+          debugPrint(
+            'Message: ${e.message}',
+          );
 
           if (!mounted) {
             return;
@@ -204,7 +250,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ) {
           _verificationId = verificationId;
 
-          debugPrint('OTP تم إرساله بنجاح');
+          debugPrint(
+            'OTP تم إرساله بنجاح',
+          );
 
           if (!mounted) {
             return;
@@ -231,8 +279,13 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } on FirebaseAuthException catch (e) {
-      debugPrint('Firebase Error: ${e.code}');
-      debugPrint('Message: ${e.message}');
+      debugPrint(
+        'Firebase Error: ${e.code}',
+      );
+
+      debugPrint(
+        'Message: ${e.message}',
+      );
 
       if (!mounted) {
         return;
@@ -271,6 +324,11 @@ class _LoginScreenState extends State<LoginScreen> {
     String phone,
     BuildContext dialogContext,
   ) async {
+    // منع الضغط أكثر من مرة
+    if (loading || _isNavigating) {
+      return;
+    }
+
     if (_verificationId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -302,9 +360,13 @@ class _LoginScreenState extends State<LoginScreen> {
         credential,
       );
 
-      if (!mounted) {
+      if (!mounted || _isNavigating) {
         return;
       }
+
+      // ========================================================
+      // حفظ حالة تسجيل الدخول
+      // ========================================================
 
       UserService.instance.isLoggedIn = true;
       UserService.instance.phone = phone;
@@ -313,13 +375,35 @@ class _LoginScreenState extends State<LoginScreen> {
         loading = false;
       });
 
-      // نستخدم نفس الـ context الخاص بالنافذة
-      // بعد التأكد أن الصفحة ما زالت موجودة.
+      // ========================================================
+      // منع أي انتقال ثاني
+      // ========================================================
+
+      _isNavigating = true;
+
+      // ========================================================
+      // إغلاق نافذة OTP
+      // ========================================================
+
       if (dialogContext.mounted) {
         Navigator.of(dialogContext).pop();
       }
 
-      _goToMainScreen();
+      _otpDialogOpen = false;
+
+      // ========================================================
+      // الانتقال بعد انتهاء بناء الـ Dialog
+      // ========================================================
+
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          if (!mounted) {
+            return;
+          }
+
+          _goToMainScreen();
+        },
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) {
         return;
@@ -333,7 +417,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       switch (e.code) {
         case 'invalid-verification-code':
-          message = 'رمز التحقق غير صحيح.';
+          message =
+              'رمز التحقق غير صحيح.';
           break;
 
         case 'session-expired':
@@ -344,6 +429,16 @@ class _LoginScreenState extends State<LoginScreen> {
         case 'too-many-requests':
           message =
               'تم إجراء محاولات كثيرة. حاولي مرة أخرى لاحقًا.';
+          break;
+
+        case 'credential-already-in-use':
+          message =
+              'بيانات تسجيل الدخول مستخدمة بالفعل.';
+          break;
+
+        case 'invalid-credential':
+          message =
+              'رمز التحقق غير صالح أو انتهت صلاحيته.';
           break;
 
         default:
@@ -384,6 +479,14 @@ class _LoginScreenState extends State<LoginScreen> {
   // ============================================================
 
   void _showOtpDialog(String phone) {
+    if (!mounted ||
+        _otpDialogOpen ||
+        _isNavigating) {
+      return;
+    }
+
+    _otpDialogOpen = true;
+
     final TextEditingController otpController =
         TextEditingController();
 
@@ -391,167 +494,261 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          title: const Text(
-            'رمز التحقق',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xff123B72),
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'تم إرسال رمز التحقق إلى رقم الجوال',
+        return StatefulBuilder(
+          builder: (
+            context,
+            setDialogState,
+          ) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(10),
+              ),
+
+              title: const Text(
+                'رمز التحقق',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Color(0xff7D8CA3),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                phone,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xff0E4595),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: otpController,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                maxLength: 6,
-                textAlign: TextAlign.center,
-                autofocus: true,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
                   color: Color(0xff123B72),
-                  letterSpacing: 4,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
                 ),
-                decoration: InputDecoration(
-                  hintText: '000000',
-                  counterText: '',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: Color(0xffDDE5EF),
+              ),
+
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'تم إرسال رمز التحقق إلى رقم الجوال',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xff7D8CA3),
+                      fontSize: 12,
                     ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: Color(0xffDDE5EF),
-                    ),
+
+                  const SizedBox(
+                    height: 8,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
+
+                  Text(
+                    phone,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
                       color: Color(0xff0E4595),
-                      width: 1.5,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
-                ),
-              ),
-            ],
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            TextButton(
-              onPressed: loading
-                  ? null
-                  : () {
-                      Navigator.of(dialogContext).pop();
-                    },
-              child: const Text(
-                'إلغاء',
-                style: TextStyle(
-                  color: Color(0xff7D8CA3),
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            SizedBox(
-              width: 100,
-              height: 40,
-              child: ElevatedButton(
-                onPressed: loading
-                    ? null
-                    : () async {
-                        final String otp =
-                            otpController.text.trim();
 
-                        if (otp.length != 6) {
-                          if (!mounted) {
-                            return;
-                          }
-
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'أدخل رمز التحقق المكون من 6 أرقام',
-                              ),
-                            ),
-                          );
-
-                          return;
-                        }
-
-                        await _verifyOtp(
-                          otp,
-                          phone,
-                          dialogContext,
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      const Color(0xff2EAD59),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(7),
+                  const SizedBox(
+                    height: 18,
                   ),
-                ),
-                child: loading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
+
+                  TextField(
+                    controller: otpController,
+                    keyboardType:
+                        TextInputType.number,
+                    textInputAction:
+                        TextInputAction.done,
+                    maxLength: 6,
+                    textAlign:
+                        TextAlign.center,
+                    autofocus: true,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight:
+                          FontWeight.bold,
+                      color: Color(0xff123B72),
+                      letterSpacing: 4,
+                    ),
+                    decoration:
+                        InputDecoration(
+                      hintText: '000000',
+                      counterText: '',
+                      filled: true,
+                      fillColor:
+                          Colors.white,
+
+                      border:
+                          OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(
+                          8,
                         ),
-                      )
-                    : const Text(
-                        'تحقق',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                        borderSide:
+                            const BorderSide(
+                          color:
+                              Color(0xffDDE5EF),
                         ),
                       ),
+
+                      enabledBorder:
+                          OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(
+                          8,
+                        ),
+                        borderSide:
+                            const BorderSide(
+                          color:
+                              Color(0xffDDE5EF),
+                        ),
+                      ),
+
+                      focusedBorder:
+                          OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(
+                          8,
+                        ),
+                        borderSide:
+                            const BorderSide(
+                          color:
+                              Color(0xff0E4595),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+
+              actionsAlignment:
+                  MainAxisAlignment.center,
+
+              actions: [
+                TextButton(
+                  onPressed:
+                      loading ||
+                              _isNavigating
+                          ? null
+                          : () {
+                              _otpDialogOpen =
+                                  false;
+
+                              Navigator.of(
+                                dialogContext,
+                              ).pop();
+                            },
+                  child: const Text(
+                    'إلغاء',
+                    style: TextStyle(
+                      color:
+                          Color(0xff7D8CA3),
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(
+                  width: 10,
+                ),
+
+                SizedBox(
+                  width: 100,
+                  height: 40,
+                  child:
+                      ElevatedButton(
+                    onPressed:
+                        loading ||
+                                _isNavigating
+                            ? null
+                            : () async {
+                                final String
+                                    otp =
+                                    otpController
+                                        .text
+                                        .trim();
+
+                                if (otp.length !=
+                                    6) {
+                                  ScaffoldMessenger
+                                      .of(
+                                    context,
+                                  ).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text(
+                                        'أدخل رمز التحقق المكون من 6 أرقام',
+                                      ),
+                                    ),
+                                  );
+
+                                  return;
+                                }
+
+                                setDialogState(
+                                  () {},
+                                );
+
+                                await _verifyOtp(
+                                  otp,
+                                  phone,
+                                  dialogContext,
+                                );
+                              },
+
+                    style:
+                        ElevatedButton
+                            .styleFrom(
+                      backgroundColor:
+                          const Color(
+                        0xff2EAD59,
+                      ),
+                      foregroundColor:
+                          Colors.white,
+                      elevation: 0,
+                      shape:
+                          RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius
+                                .circular(
+                          7,
+                        ),
+                      ),
+                    ),
+
+                    child: loading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<
+                                      Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'تحقق',
+                            style:
+                                TextStyle(
+                              fontSize: 12,
+                              fontWeight:
+                                  FontWeight
+                                      .bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     ).then((_) {
-      otpController.dispose();
+      _otpDialogOpen = false;
+
+      // التخلص من OTP controller
+      // بعد انتهاء الـ Dialog بالكامل
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) {
+        otpController.dispose();
+      });
     });
   }
 
@@ -570,7 +767,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     switch (e.code) {
       case 'invalid-phone-number':
-        message = 'رقم الجوال غير صحيح.';
+        message =
+            'رقم الجوال غير صحيح.';
         break;
 
       case 'too-many-requests':
@@ -630,16 +828,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (widget.fromCheckout) {
-      Navigator.pop(context, true);
-    } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const MainNavScreen(),
-        ),
-        (route) => false,
-      );
+      Navigator.of(context).pop(true);
+      return;
     }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const MainNavScreen(),
+      ),
+      (route) => false,
+    );
   }
 
   // ============================================================
@@ -647,7 +845,9 @@ class _LoginScreenState extends State<LoginScreen> {
   // ============================================================
 
   Future<void> loginWithGoogle() async {
-    if (loading) {
+    if (loading ||
+        _isNavigating ||
+        _otpDialogOpen) {
       return;
     }
 
@@ -656,27 +856,24 @@ class _LoginScreenState extends State<LoginScreen> {
         loading = true;
       });
 
-      // تهيئة Google
       await initializeGoogleSignIn();
 
       if (!mounted) {
         return;
       }
 
-      // فتح حسابات Google
       final GoogleSignInAccount account =
           await _googleSignIn.authenticate();
 
-      // ========================================================
-      // الحصول على Google Authentication
-      // ========================================================
-
-      final GoogleSignInAuthentication googleAuth =
+      final GoogleSignInAuthentication
+          googleAuth =
           account.authentication;
 
-      final String? idToken = googleAuth.idToken;
+      final String? idToken =
+          googleAuth.idToken;
 
-      if (idToken == null || idToken.isEmpty) {
+      if (idToken == null ||
+          idToken.isEmpty) {
         throw Exception(
           'لم يتم الحصول على Google ID Token',
         );
@@ -686,25 +883,18 @@ class _LoginScreenState extends State<LoginScreen> {
         'Google ID Token received successfully',
       );
 
-      // ========================================================
-      // إنشاء Firebase Credential
-      // ========================================================
-
       final OAuthCredential credential =
           GoogleAuthProvider.credential(
         idToken: idToken,
       );
-
-      // ========================================================
-      // تسجيل الدخول الفعلي في Firebase
-      // ========================================================
 
       final UserCredential userCredential =
           await _auth.signInWithCredential(
         credential,
       );
 
-      final User? user = userCredential.user;
+      final User? user =
+          userCredential.user;
 
       if (user == null) {
         throw Exception(
@@ -712,50 +902,68 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
 
-      debugPrint('====================================');
-      debugPrint('Google Firebase Login SUCCESS');
-      debugPrint('UID: ${user.uid}');
-      debugPrint('Name: ${user.displayName}');
-      debugPrint('Email: ${user.email}');
-      debugPrint('====================================');
+      debugPrint(
+        '====================================',
+      );
+
+      debugPrint(
+        'Google Firebase Login SUCCESS',
+      );
+
+      debugPrint(
+        'UID: ${user.uid}',
+      );
+
+      debugPrint(
+        'Name: ${user.displayName}',
+      );
+
+      debugPrint(
+        'Email: ${user.email}',
+      );
+
+      debugPrint(
+        '====================================',
+      );
 
       if (!mounted) {
         return;
       }
 
-      // ========================================================
-      // حفظ حالة الدخول داخل التطبيق
-      // ========================================================
-
       UserService.instance.isLoggedIn = true;
-
-      // حاليًا UserService عندك يستخدم phone
-      // لذلك نضع البريد مؤقتًا هنا
-      UserService.instance.phone = user.email ?? '';
+      UserService.instance.phone =
+          user.email ?? '';
 
       setState(() {
         loading = false;
       });
 
+      _isNavigating = true;
+
       // ========================================================
-      // الانتقال
+      // الانتقال بعد انتهاء دورة البناء
       // ========================================================
 
-      if (!mounted) {
-        return;
-      }
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          if (!mounted) {
+            return;
+          }
 
-      if (widget.fromCheckout) {
-        Navigator.pop(context, true);
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const MainNavScreen(),
-          ),
-          (route) => false,
-        );
-      }
+          if (widget.fromCheckout) {
+            Navigator.of(context).pop(true);
+          } else {
+            Navigator.of(context)
+                .pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const MainNavScreen(),
+              ),
+              (route) => false,
+            );
+          }
+        },
+      );
     } on GoogleSignInException catch (e) {
       if (!mounted) {
         return;
@@ -765,7 +973,8 @@ class _LoginScreenState extends State<LoginScreen> {
         loading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             _googleErrorMessage(e),
@@ -795,10 +1004,12 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       debugPrint(
-        'Firebase Google Auth Message: ${e.message}',
+        'Firebase Google Auth Message: '
+        '${e.message}',
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             'خطأ في Firebase:\n'
@@ -818,7 +1029,8 @@ class _LoginScreenState extends State<LoginScreen> {
         loading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             'حدث خطأ أثناء تسجيل الدخول عبر Google:\n$e',
@@ -846,10 +1058,12 @@ class _LoginScreenState extends State<LoginScreen> {
       case GoogleSignInExceptionCode.canceled:
         return 'تم إلغاء تسجيل الدخول عبر Google.';
 
-      case GoogleSignInExceptionCode.clientConfigurationError:
+      case GoogleSignInExceptionCode
+            .clientConfigurationError:
         return 'إعدادات Google غير صحيحة. تأكدي من Package Name و SHA-1 و Web Client ID.';
 
-      case GoogleSignInExceptionCode.providerConfigurationError:
+      case GoogleSignInExceptionCode
+            .providerConfigurationError:
         return 'خدمة Google غير متاحة أو إعداداتها غير صحيحة.';
 
       case GoogleSignInExceptionCode.uiUnavailable:
@@ -875,7 +1089,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
       SnackBar(
         content: Text(
           AppStrings.appleLoginComingSoon,
@@ -889,13 +1104,21 @@ class _LoginScreenState extends State<LoginScreen> {
   // ============================================================
 
   void continueAsGuest() {
+    if (loading ||
+        _isNavigating ||
+        _otpDialogOpen) {
+      return;
+    }
+
     if (widget.fromCheckout) {
-      Navigator.pop(context, false);
+      Navigator.of(context).pop(false);
     } else {
-      Navigator.pushAndRemoveUntil(
-        context,
+      _isNavigating = true;
+
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) => const MainNavScreen(
+          builder: (_) =>
+              const MainNavScreen(
             isGuest: true,
           ),
         ),
@@ -918,23 +1141,32 @@ class _LoginScreenState extends State<LoginScreen> {
       textDirection: isArabic
           ? TextDirection.rtl
           : TextDirection.ltr,
+
       child: Scaffold(
         backgroundColor:
             const Color(0xffF7F9FC),
+
         body: SafeArea(
           child: LayoutBuilder(
-            builder: (context, constraints) {
+            builder: (
+              context,
+              constraints,
+            ) {
               return SingleChildScrollView(
                 padding:
                     const EdgeInsets.symmetric(
                   horizontal: 25,
                   vertical: 20,
                 ),
+
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
+                  constraints:
+                      BoxConstraints(
                     minHeight:
-                        constraints.maxHeight - 40,
+                        constraints.maxHeight -
+                            40,
                   ),
+
                   child: IntrinsicHeight(
                     child: Center(
                       child: ConstrainedBox(
@@ -942,36 +1174,55 @@ class _LoginScreenState extends State<LoginScreen> {
                             const BoxConstraints(
                           maxWidth: 360,
                         ),
+
                         child: Form(
                           key: formKey,
+
                           autovalidateMode:
                               AutovalidateMode
                                   .onUserInteraction,
+
                           child: Column(
                             mainAxisAlignment:
-                                MainAxisAlignment.center,
+                                MainAxisAlignment
+                                    .center,
+
                             children: [
                               // ==================================================
                               // زر الرجوع
                               // ==================================================
 
-                              if (widget.fromCheckout)
+                              if (widget
+                                  .fromCheckout)
                                 Align(
                                   alignment: isArabic
-                                      ? Alignment.centerRight
-                                      : Alignment.centerLeft,
-                                  child: IconButton(
-                                    onPressed: () {
-                                      Navigator.pop(
+                                      ? Alignment
+                                          .centerRight
+                                      : Alignment
+                                          .centerLeft,
+
+                                  child:
+                                      IconButton(
+                                    onPressed:
+                                        () {
+                                      if (loading) {
+                                        return;
+                                      }
+
+                                      Navigator.of(
                                         context,
-                                        false,
-                                      );
+                                      ).pop(false);
                                     },
+
                                     icon: Icon(
                                       isArabic
-                                          ? Icons.arrow_forward
-                                          : Icons.arrow_back,
-                                      color: const Color(
+                                          ? Icons
+                                              .arrow_forward
+                                          : Icons
+                                              .arrow_back,
+
+                                      color:
+                                          const Color(
                                         0xff0E4595,
                                       ),
                                     ),
@@ -982,12 +1233,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               // الشعار
                               // ==================================================
 
-                              if (!widget.fromCheckout)
+                              if (!widget
+                                  .fromCheckout)
                                 Image.asset(
                                   'lib/assets/alamal.png',
                                   width: 90,
                                   height: 90,
-                                  fit: BoxFit.contain,
+                                  fit: BoxFit
+                                      .contain,
+
                                   errorBuilder:
                                       (
                                     context,
@@ -998,7 +1252,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       Icons
                                           .local_pharmacy_outlined,
                                       size: 70,
-                                      color: Color(
+                                      color:
+                                          Color(
                                         0xff0E4595,
                                       ),
                                     );
@@ -1014,18 +1269,26 @@ class _LoginScreenState extends State<LoginScreen> {
                               // ==================================================
 
                               Text(
-                                widget.fromCheckout
+                                widget
+                                        .fromCheckout
                                     ? AppStrings
                                         .loginToCompleteOrder
-                                    : AppStrings.loginTitle,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                    : AppStrings
+                                        .loginTitle,
+
+                                textAlign:
+                                    TextAlign
+                                        .center,
+
+                                style:
+                                    const TextStyle(
                                   color: Color(
                                     0xff123B72,
                                   ),
                                   fontSize: 19,
                                   fontWeight:
-                                      FontWeight.w800,
+                                      FontWeight
+                                          .w800,
                                 ),
                               ),
 
@@ -1038,12 +1301,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               // ==================================================
 
                               Text(
-                                widget.fromCheckout
+                                widget
+                                        .fromCheckout
                                     ? AppStrings
                                         .loginToContinueOrder
-                                    : AppStrings.loginSubtitle,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                    : AppStrings
+                                        .loginSubtitle,
+
+                                textAlign:
+                                    TextAlign
+                                        .center,
+
+                                style:
+                                    const TextStyle(
                                   color: Color(
                                     0xff7D8CA3,
                                   ),
@@ -1062,41 +1332,63 @@ class _LoginScreenState extends State<LoginScreen> {
                               TextFormField(
                                 controller:
                                     phoneController,
+
                                 keyboardType:
-                                    TextInputType.phone,
+                                    TextInputType
+                                        .phone,
+
                                 textInputAction:
-                                    TextInputAction.done,
+                                    TextInputAction
+                                        .done,
+
                                 textAlign: isArabic
                                     ? TextAlign.right
                                     : TextAlign.left,
+
                                 textDirection: isArabic
-                                    ? TextDirection.rtl
-                                    : TextDirection.ltr,
-                                autofillHints: const [
+                                    ? TextDirection
+                                        .rtl
+                                    : TextDirection
+                                        .ltr,
+
+                                autofillHints:
+                                    const [
                                   AutofillHints
                                       .telephoneNumber,
                                 ],
-                                onFieldSubmitted: (_) =>
-                                    login(),
+
+                                onFieldSubmitted:
+                                    (_) =>
+                                        login(),
+
                                 decoration:
                                     InputDecoration(
-                                  hintText: AppStrings
-                                      .phoneNumber,
+                                  hintText:
+                                      AppStrings
+                                          .phoneNumber,
+
                                   prefixIcon:
                                       const Icon(
-                                    Icons.phone_outlined,
+                                    Icons
+                                        .phone_outlined,
                                     color: Color(
                                       0xff0E4595,
                                     ),
                                   ),
+
                                   filled: true,
+
                                   fillColor:
                                       Colors.white,
+
                                   border:
                                       OutlineInputBorder(
                                     borderRadius:
                                         BorderRadius
-                                            .circular(8),
+                                            .circular(
+                                      8,
+                                    ),
+
                                     borderSide:
                                         const BorderSide(
                                       color: Color(
@@ -1104,11 +1396,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                   ),
+
                                   enabledBorder:
                                       OutlineInputBorder(
                                     borderRadius:
                                         BorderRadius
-                                            .circular(8),
+                                            .circular(
+                                      8,
+                                    ),
+
                                     borderSide:
                                         const BorderSide(
                                       color: Color(
@@ -1116,11 +1412,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                   ),
+
                                   focusedBorder:
                                       OutlineInputBorder(
                                     borderRadius:
                                         BorderRadius
-                                            .circular(8),
+                                            .circular(
+                                      8,
+                                    ),
+
                                     borderSide:
                                         const BorderSide(
                                       color: Color(
@@ -1130,15 +1430,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                 ),
-                                validator: (value) {
-                                  if (value == null ||
-                                      value.trim().isEmpty) {
+
+                                validator:
+                                    (value) {
+                                  if (value ==
+                                          null ||
+                                      value
+                                          .trim()
+                                          .isEmpty) {
                                     return AppStrings
                                         .phoneRequired;
                                   }
 
                                   final phone =
-                                      value.replaceAll(
+                                      value
+                                          .replaceAll(
                                     ' ',
                                     '',
                                   );
@@ -1162,24 +1468,37 @@ class _LoginScreenState extends State<LoginScreen> {
                               // نسيت كلمة المرور
                               // ==================================================
 
-                              if (!widget.fromCheckout)
+                              if (!widget
+                                  .fromCheckout)
                                 Align(
                                   alignment: isArabic
-                                      ? Alignment.centerRight
-                                      : Alignment.centerLeft,
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ForgotPasswordScreen(),
-                                        ),
-                                      );
-                                    },
+                                      ? Alignment
+                                          .centerRight
+                                      : Alignment
+                                          .centerLeft,
+
+                                  child:
+                                      TextButton(
+                                    onPressed:
+                                        loading
+                                            ? null
+                                            : () {
+                                                Navigator
+                                                    .of(
+                                                  context,
+                                                ).push(
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (_) =>
+                                                            const ForgotPasswordScreen(),
+                                                  ),
+                                                );
+                                              },
+
                                     child: Text(
                                       AppStrings
                                           .forgotPassword,
+
                                       style:
                                           const TextStyle(
                                         color: Color(
@@ -1187,7 +1506,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                         fontSize: 11.5,
                                         fontWeight:
-                                            FontWeight.w700,
+                                            FontWeight
+                                                .w700,
                                       ),
                                     ),
                                   ),
@@ -1202,13 +1522,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               // ==================================================
 
                               SizedBox(
-                                width: double.infinity,
+                                width:
+                                    double.infinity,
                                 height: 47,
-                                child: ElevatedButton(
+
+                                child:
+                                    ElevatedButton(
                                   onPressed:
-                                      loading
+                                      loading ||
+                                              _isNavigating
                                           ? null
                                           : login,
+
                                   style:
                                       ElevatedButton
                                           .styleFrom(
@@ -1216,41 +1541,54 @@ class _LoginScreenState extends State<LoginScreen> {
                                         const Color(
                                       0xff2EAD59,
                                     ),
+
                                     foregroundColor:
                                         Colors.white,
+
                                     disabledBackgroundColor:
                                         const Color(
                                       0xffA9D7B8,
                                     ),
+
                                     elevation: 0,
+
                                     shape:
                                         RoundedRectangleBorder(
                                       borderRadius:
                                           BorderRadius
-                                              .circular(7),
+                                              .circular(
+                                        7,
+                                      ),
                                     ),
                                   ),
+
                                   child: loading
                                       ? const SizedBox(
                                           width: 20,
                                           height: 20,
                                           child:
                                               CircularProgressIndicator(
-                                            strokeWidth: 2,
+                                            strokeWidth:
+                                                2,
                                             valueColor:
                                                 AlwaysStoppedAnimation<
                                                     Color>(
-                                              Colors.white,
+                                              Colors
+                                                  .white,
                                             ),
                                           ),
                                         )
                                       : Text(
-                                          AppStrings.login,
+                                          AppStrings
+                                              .login,
+
                                           style:
                                               const TextStyle(
-                                            fontSize: 13,
+                                            fontSize:
+                                                13,
                                             fontWeight:
-                                                FontWeight.bold,
+                                                FontWeight
+                                                    .bold,
                                           ),
                                         ),
                                 ),
@@ -1273,15 +1611,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                   ),
+
                                   Padding(
                                     padding:
                                         const EdgeInsets
                                             .symmetric(
                                       horizontal: 10,
                                     ),
+
                                     child: Text(
                                       AppStrings
                                           .orContinueWith,
+
                                       style:
                                           const TextStyle(
                                         color: Color(
@@ -1291,6 +1632,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                   ),
+
                                   const Expanded(
                                     child: Divider(
                                       color: Color(
@@ -1311,24 +1653,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.center,
+                                    MainAxisAlignment
+                                        .center,
+
                                 children: [
                                   _SocialButton(
                                     assetPath:
                                         'lib/assets/google_icon.png',
+
                                     fallbackIcon:
-                                        Icons.g_mobiledata,
+                                        Icons
+                                            .g_mobiledata,
+
                                     onTap:
                                         loginWithGoogle,
                                   ),
+
                                   const SizedBox(
                                     width: 16,
                                   ),
+
                                   _SocialButton(
                                     assetPath:
                                         'lib/assets/apple_icon.png',
+
                                     fallbackIcon:
                                         Icons.apple,
+
                                     onTap:
                                         loginWithApple,
                                   ),
@@ -1345,11 +1696,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.center,
+                                    MainAxisAlignment
+                                        .center,
+
                                 children: [
                                   Text(
                                     AppStrings
                                         .dontHaveAccount,
+
                                     style:
                                         const TextStyle(
                                       color: Color(
@@ -1358,26 +1712,36 @@ class _LoginScreenState extends State<LoginScreen> {
                                       fontSize: 11.5,
                                     ),
                                   ),
+
                                   TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const CreateAccountScreen(),
-                                        ),
-                                      );
-                                    },
+                                    onPressed:
+                                        loading
+                                            ? null
+                                            : () {
+                                                Navigator
+                                                    .of(
+                                                  context,
+                                                ).push(
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (_) =>
+                                                            const CreateAccountScreen(),
+                                                  ),
+                                                );
+                                              },
+
                                     child: Text(
                                       AppStrings
                                           .createAccount,
+
                                       style:
                                           const TextStyle(
                                         color: Color(
                                           0xff0E4595,
                                         ),
                                         fontWeight:
-                                            FontWeight.bold,
+                                            FontWeight
+                                                .bold,
                                         fontSize: 11.5,
                                       ),
                                     ),
@@ -1389,20 +1753,27 @@ class _LoginScreenState extends State<LoginScreen> {
                               // الدخول كضيف
                               // ==================================================
 
-                              if (!widget.fromCheckout)
+                              if (!widget
+                                  .fromCheckout)
                                 TextButton(
                                   onPressed:
-                                      continueAsGuest,
+                                      loading ||
+                                              _isNavigating
+                                          ? null
+                                          : continueAsGuest,
+
                                   child: Text(
                                     AppStrings
                                         .continueAsGuest,
+
                                     style:
                                         const TextStyle(
                                       color: Color(
                                         0xff123B72,
                                       ),
                                       fontWeight:
-                                          FontWeight.w600,
+                                          FontWeight
+                                              .w600,
                                       fontSize: 11.5,
                                     ),
                                   ),
@@ -1427,7 +1798,8 @@ class _LoginScreenState extends State<LoginScreen> {
 // زر Google / Apple
 // ============================================================
 
-class _SocialButton extends StatelessWidget {
+class _SocialButton
+    extends StatelessWidget {
   final String assetPath;
   final IconData fallbackIcon;
   final VoidCallback onTap;
@@ -1442,31 +1814,52 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius:
+          BorderRadius.circular(10),
+
       child: Container(
         width: 52,
         height: 52,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
+
+        alignment:
+            Alignment.center,
+
+        decoration:
+            BoxDecoration(
           color: Colors.white,
+
           border: Border.all(
-            color: const Color(
+            color:
+                const Color(
               0xffDDE5EF,
             ),
           ),
-          borderRadius: BorderRadius.circular(10),
+
+          borderRadius:
+              BorderRadius.circular(
+            10,
+          ),
         ),
+
         child: Image.asset(
           assetPath,
+
           width: 22,
           height: 22,
+
           fit: BoxFit.contain,
+
           errorBuilder:
-              (context, error, stackTrace) {
+              (
+            context,
+            error,
+            stackTrace,
+          ) {
             return Icon(
               fallbackIcon,
               size: 24,
-              color: const Color(
+              color:
+                  const Color(
                 0xff123B72,
               ),
             );

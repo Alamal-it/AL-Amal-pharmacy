@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_colors.dart';
@@ -31,19 +35,27 @@ class BranchPickerScreen extends StatefulWidget {
 }
 
 class _BranchPickerScreenState extends State<BranchPickerScreen> {
-  static const LatLng defaultCenter = LatLng(16.8892, 42.5511);
+  static const LatLng defaultCenter = LatLng(17.0000, 42.6000);
 
   GoogleMapController? mapController;
 
   String? selectedBranchId;
+  String? nearestBranchId;
+
+  Position? userPosition;
+  bool isLoadingLocation = true;
+  bool isResolvingBranches = false;
+  bool isMapReady = false;
 
   final TextEditingController noteController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
 
   String searchQuery = '';
 
-  /// جميع الفروع المرسلة من الإدارة.
-  /// روابط Google Maps هي الروابط الأصلية للفروع.
+  final Map<String, LatLng> _branchLocations = <String, LatLng>{};
+
+  final Set<Marker> _markers = <Marker>{};
+
   final List<PharmacyBranch> branches = const [
     PharmacyBranch(
       id: '1',
@@ -502,16 +514,349 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+
+    if (branches.isNotEmpty) {
+      selectedBranchId = branches.first.id;
+    }
+
+    searchController.addListener(() {
+      if (!mounted) return;
+      setState(() {
+        searchQuery = searchController.text;
+      });
+    });
+
+    _initializeBranches();
+  }
+
+  @override
+  void dispose() {
+    noteController.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeBranches() async {
+    await _getUserLocation();
+    await _resolveBranchLocations();
+  }
+
+  Future<void> _getUserLocation() async {
+    if (!mounted) return;
+
+    setState(() {
+      isLoadingLocation = true;
+    });
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+      if (!serviceEnabled) {
+        if (mounted) {
+          setState(() {
+            isLoadingLocation = false;
+          });
+          _showLocationMessage('فعّلي خدمة الموقع من إعدادات الجهاز لعرض أقرب فرع.');
+        }
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          setState(() {
+            isLoadingLocation = false;
+          });
+          _showLocationMessage(
+            permission == LocationPermission.deniedForever
+                ? 'صلاحية الموقع مرفوضة نهائيًا. يمكنك تفعيلها من إعدادات التطبيق.'
+                : 'اسمحي للتطبيق بالوصول إلى موقعك لعرض أقرب فرع.',
+          );
+        }
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 20,
+        ),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        userPosition = position;
+        isLoadingLocation = false;
+      });
+
+      await _moveCameraTo(
+        LatLng(position.latitude, position.longitude),
+        zoom: 13.5,
+      );
+
+      _rebuildMarkers();
+
+      if (_branchLocations.isNotEmpty) {
+        _selectNearestBranch(moveCamera: false);
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoadingLocation = false;
+      });
+
+      _showLocationMessage('تعذر تحديد موقعك حاليًا. يمكنك اختيار الفرع يدويًا.');
+    }
+  }
+
+  Future<void> _resolveBranchLocations() async {
+    if (!mounted) return;
+
+    setState(() {
+      isResolvingBranches = true;
+    });
+
+    final client = http.Client();
+
+    try {
+      // Resolve in small batches so the phone is not flooded with requests.
+      for (var start = 0; start < branches.length; start += 6) {
+        final end = (start + 6 > branches.length) ? branches.length : start + 6;
+        final batch = branches.sublist(start, end);
+
+        await Future.wait(
+          batch.map(
+            (branch) => _resolveSingleBranch(client, branch),
+          ),
+        );
+
+        if (mounted) {
+          _rebuildMarkers();
+
+          if (userPosition != null) {
+            _selectNearestBranch(moveCamera: false);
+          }
+
+          setState(() {});
+        }
+      }
+    } finally {
+      client.close();
+
+      if (mounted) {
+        setState(() {
+          isResolvingBranches = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _resolveSingleBranch(
+    http.Client client,
+    PharmacyBranch branch,
+  ) async {
+    try {
+      final response = await client
+          .get(Uri.parse(branch.mapUrl))
+          .timeout(const Duration(seconds: 8));
+
+      final finalUri = response.request?.url;
+
+      LatLng? coordinates;
+
+      if (finalUri != null) {
+        coordinates = _extractCoordinates(finalUri.toString());
+
+        if (coordinates == null) {
+          coordinates = _extractCoordinatesFromQuery(finalUri);
+        }
+      }
+
+      // Some Google Maps redirects keep the coordinates inside the returned HTML.
+      coordinates ??= _extractCoordinates(response.body);
+
+      if (coordinates != null) {
+        _branchLocations[branch.id] = coordinates;
+      }
+    } catch (_) {
+      // A branch can still be opened normally in Google Maps even if its
+      // coordinates cannot be resolved here.
+    }
+  }
+
+  LatLng? _extractCoordinatesFromQuery(Uri uri) {
+    const keys = <String>[
+      'query',
+      'q',
+      'destination',
+      'center',
+    ];
+
+    for (final key in keys) {
+      final value = uri.queryParameters[key];
+      if (value == null) continue;
+
+      final result = _extractCoordinates(value);
+      if (result != null) return result;
+    }
+
+    return null;
+  }
+
+  LatLng? _extractCoordinates(String value) {
+    final decoded = Uri.decodeComponent(value);
+
+    final patterns = <RegExp>[
+      RegExp(
+        r'@(-?\d{1,3}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)',
+      ),
+      RegExp(
+        r'!3d(-?\d{1,3}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)',
+      ),
+      RegExp(
+        r'(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)',
+      ),
+    ];
+
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(decoded);
+      if (match == null) continue;
+
+      final latitude = double.tryParse(match.group(1)!);
+      final longitude = double.tryParse(match.group(2)!);
+
+      if (latitude == null || longitude == null) continue;
+
+      if (latitude.abs() <= 90 && longitude.abs() <= 180) {
+        return LatLng(latitude, longitude);
+      }
+    }
+
+    return null;
+  }
+
+  void _rebuildMarkers() {
+    final markers = <Marker>{};
+
+    for (final branch in branches) {
+      final location = _branchLocations[branch.id];
+      if (location == null) continue;
+
+      final isSelected = branch.id == selectedBranchId;
+      final isNearest = branch.id == nearestBranchId;
+
+      markers.add(
+        Marker(
+          markerId: MarkerId('branch_${branch.id}'),
+          position: location,
+          zIndexInt: isSelected ? 100 : (isNearest ? 90 : 1),
+          infoWindow: InfoWindow(
+            title: isNearest ? '⭐ الأقرب إليك' : branch.name,
+            snippet: _distanceText(branch),
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            isSelected
+                ? BitmapDescriptor.hueGreen
+                : BitmapDescriptor.hueAzure,
+          ),
+          onTap: () {
+            selectBranch(branch, moveCamera: false);
+          },
+        ),
+      );
+    }
+
+    if (userPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('my_location'),
+          position: LatLng(
+            userPosition!.latitude,
+            userPosition!.longitude,
+          ),
+          zIndexInt: 200,
+          infoWindow: const InfoWindow(
+            title: 'موقعك الحالي',
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueViolet,
+          ),
+        ),
+      );
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _markers
+        ..clear()
+        ..addAll(markers);
+    });
+  }
+
+  double? _distanceTo(PharmacyBranch branch) {
+    final user = userPosition;
+    final branchLocation = _branchLocations[branch.id];
+
+    if (user == null || branchLocation == null) return null;
+
+    return Geolocator.distanceBetween(
+          user.latitude,
+          user.longitude,
+          branchLocation.latitude,
+          branchLocation.longitude,
+        ) /
+        1000;
+  }
+
+  String _distanceText(PharmacyBranch branch) {
+    final distance = _distanceTo(branch);
+
+    if (distance == null) {
+      return 'الموقع متوفر على خرائط Google';
+    }
+
+    if (distance < 1) {
+      return '${(distance * 1000).round()} م تقريبًا';
+    }
+
+    return '${distance.toStringAsFixed(1)} كم تقريبًا';
+  }
+
   List<PharmacyBranch> get filteredBranches {
     final query = searchQuery.trim().toLowerCase();
 
-    if (query.isEmpty) {
-      return branches;
-    }
-
-    return branches.where((branch) {
+    final result = branches.where((branch) {
+      if (query.isEmpty) return true;
       return branch.name.toLowerCase().contains(query);
     }).toList();
+
+    result.sort((a, b) {
+      final da = _distanceTo(a);
+      final db = _distanceTo(b);
+
+      if (da != null && db != null) {
+        return da.compareTo(db);
+      }
+
+      if (da != null) return -1;
+      if (db != null) return 1;
+
+      return a.id.compareTo(b.id);
+    });
+
+    return result;
   }
 
   PharmacyBranch? get selectedBranch {
@@ -526,28 +871,117 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
     return null;
   }
 
-  @override
-  void initState() {
-    super.initState();
+  PharmacyBranch? get nearestBranch {
+    if (nearestBranchId == null) return null;
 
-    if (branches.isNotEmpty) {
-      selectedBranchId = branches.first.id;
+    for (final branch in branches) {
+      if (branch.id == nearestBranchId) {
+        return branch;
+      }
     }
 
-    searchController.addListener(() {
-      if (!mounted) return;
-
-      setState(() {
-        searchQuery = searchController.text;
-      });
-    });
+    return null;
   }
 
-  @override
-  void dispose() {
-    noteController.dispose();
-    searchController.dispose();
-    super.dispose();
+  void _selectNearestBranch({bool moveCamera = true}) {
+    if (userPosition == null || _branchLocations.isEmpty) return;
+
+    PharmacyBranch? nearest;
+    double? shortestDistance;
+
+    for (final branch in branches) {
+      final distance = _distanceTo(branch);
+      if (distance == null) continue;
+
+      if (shortestDistance == null || distance < shortestDistance) {
+        shortestDistance = distance;
+        nearest = branch;
+      }
+    }
+
+    if (nearest == null) return;
+
+    final changed = nearestBranchId != nearest.id;
+
+    if (mounted) {
+      setState(() {
+        nearestBranchId = nearest!.id;
+
+        // Automatically choose the nearest branch when the customer first
+        // opens this screen.
+        if (selectedBranchId == null || changed) {
+          selectedBranchId = nearest.id;
+        }
+      });
+    }
+
+    _rebuildMarkers();
+
+    if (moveCamera) {
+      final location = _branchLocations[nearest.id];
+      if (location != null) {
+        _moveCameraTo(location, zoom: 15.2);
+      }
+    }
+  }
+
+  Future<void> _moveCameraTo(
+    LatLng target, {
+    double zoom = 14,
+  }) async {
+    if (mapController == null) return;
+
+    try {
+      await mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: target,
+            zoom: zoom,
+          ),
+        ),
+      );
+    } catch (_) {}
+  }
+
+  void selectBranch(
+    PharmacyBranch branch, {
+    bool moveCamera = true,
+  }) {
+    setState(() {
+      selectedBranchId = branch.id;
+    });
+
+    _rebuildMarkers();
+
+    final location = _branchLocations[branch.id];
+    if (moveCamera && location != null) {
+      _moveCameraTo(location, zoom: 15.2);
+    }
+  }
+
+  Future<void> _openSelectedDirections() async {
+    final branch = selectedBranch;
+    if (branch == null) return;
+
+    final location = _branchLocations[branch.id];
+
+    if (location != null) {
+      final uri = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1'
+        '&destination=${location.latitude},${location.longitude}',
+      );
+
+      try {
+        final opened = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (opened) return;
+      } catch (_) {}
+    }
+
+    await openBranchLocation(branch);
   }
 
   Future<void> openBranchLocation(PharmacyBranch branch) async {
@@ -560,38 +994,50 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
       );
 
       if (!opened && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تعذر فتح موقع الفرع'),
-          ),
-        );
+        _showLocationMessage('تعذر فتح موقع الفرع.');
       }
     } catch (_) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تعذر فتح خرائط Google'),
-        ),
-      );
+      _showLocationMessage('تعذر فتح خرائط Google.');
     }
   }
 
-  void selectBranch(PharmacyBranch branch) {
-    setState(() {
-      selectedBranchId = branch.id;
-    });
+  void _showLocationMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  textDirection: TextDirection.rtl,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
   }
 
   void confirmBranch() {
     final branch = selectedBranch;
 
     if (branch == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يرجى اختيار فرع أولاً'),
-        ),
-      );
+      _showLocationMessage('اختاري الفرع أولًا لإكمال الطلب.');
       return;
     }
 
@@ -608,477 +1054,732 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final visibleBranches = filteredBranches;
+    final nearest = nearestBranch;
+    final selected = selectedBranch;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      body: Column(
+      backgroundColor: const Color(0xFFF4F7F8),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _buildHeader(),
+            const CheckoutStepper(currentStep: 0),
+            Expanded(
+              child: Column(
+                children: [
+                  _buildSearchAndStatus(visibleBranches),
+                  Expanded(
+                    flex: 5,
+                    child: _buildMap(nearest),
+                  ),
+                  Expanded(
+                    flex: 7,
+                    child: _buildBranchesPanel(
+                      visibleBranches,
+                      selected,
+                      nearest,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+      child: Row(
         children: [
-          SafeArea(
-            bottom: false,
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: AppColors.primaryDark,
+              size: 20,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              children: const [
+                Text(
+                  'استلام من الفرع',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'اختاري أقرب فرع لك واستلمي طلبك بسهولة',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.textGray,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndStatus(List<PharmacyBranch> visibleBranches) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
+      child: Column(
+        children: [
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F7F8),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.75),
+              ),
+            ),
+            child: TextField(
+              controller: searchController,
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+              decoration: InputDecoration(
+                hintText: 'ابحثي باسم الفرع أو المدينة...',
+                hintStyle: const TextStyle(
+                  color: AppColors.textGray,
+                  fontSize: 12,
+                ),
+                prefixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                        onPressed: searchController.clear,
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 19,
+                          color: AppColors.textGray,
+                        ),
+                      )
+                    : null,
+                suffixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.primary,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _statusChip(
+                  icon: isLoadingLocation
+                      ? Icons.gps_not_fixed_rounded
+                      : Icons.my_location_rounded,
+                  title: isLoadingLocation
+                      ? 'جاري تحديد موقعك...'
+                      : userPosition != null
+                          ? 'تم تحديد موقعك'
+                          : 'حدد موقعك للأقرب',
+                  onTap: _getUserLocation,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${visibleBranches.length} فرع',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 11,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.green.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.green.withValues(alpha: 0.16),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Flexible(
+              child: Text(
+                title,
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 7),
+            Icon(
+              icon,
+              color: AppColors.green,
+              size: 17,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMap(PharmacyBranch? nearest) {
+    return Stack(
+      children: [
+        GoogleMap(
+          initialCameraPosition: const CameraPosition(
+            target: defaultCenter,
+            zoom: 7.5,
+          ),
+          markers: _markers,
+          myLocationEnabled: userPosition != null,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          compassEnabled: false,
+          buildingsEnabled: true,
+          onMapCreated: (controller) {
+            mapController = controller;
+            isMapReady = true;
+
+            final user = userPosition;
+            if (user != null) {
+              _moveCameraTo(
+                LatLng(user.latitude, user.longitude),
+                zoom: 13.5,
+              );
+            }
+          },
+        ),
+
+        Positioned(
+          top: 12,
+          right: 12,
+          child: _mapBadge(),
+        ),
+
+        Positioned(
+          left: 14,
+          bottom: 14,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (nearest != null && _distanceTo(nearest) != null)
+                _nearestMapCard(nearest),
+              const SizedBox(height: 8),
+              _mapLocationButton(),
+            ],
+          ),
+        ),
+
+        if (isResolvingBranches)
+          Positioned(
+            top: 12,
+            left: 12,
             child: Container(
-              color: Colors.white,
               padding: const EdgeInsets.symmetric(
-                horizontal: 12,
+                horizontal: 11,
                 vertical: 8,
               ),
-              child: Row(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_forward,
+                  SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  SizedBox(width: 7),
+                  Text(
+                    'تحديث مواقع الفروع',
+                    style: TextStyle(
                       color: AppColors.primaryDark,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const Expanded(
-                    child: Text(
-                      'استلام من الفرع',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.primaryDark,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
                 ],
               ),
             ),
           ),
+      ],
+    );
+  }
 
-          Container(
+  Widget _mapBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 9,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.storefront_rounded,
+            color: AppColors.green,
+            size: 18,
+          ),
+          SizedBox(width: 6),
+          Text(
+            'فروع صيدلية الأمل',
+            style: TextStyle(
+              color: AppColors.primaryDark,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _nearestMapCard(PharmacyBranch branch) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => selectBranch(branch),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 210,
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
-            child: const CheckoutStepper(
-              currentStep: 0,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.green.withValues(alpha: 0.25),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 35,
+                height: 35,
+                decoration: BoxDecoration(
+                  color: AppColors.green.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.near_me_rounded,
+                  color: AppColors.green,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'الأقرب إليك',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: AppColors.green,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      branch.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: AppColors.primaryDark,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _distanceText(branch),
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: AppColors.textGray,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _mapLocationButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () async {
+          final user = userPosition;
+          if (user == null) {
+            await _getUserLocation();
+            return;
+          }
+
+          await _moveCameraTo(
+            LatLng(user.latitude, user.longitude),
+            zoom: 15,
+          );
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.my_location_rounded,
+            color: AppColors.primary,
+            size: 21,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBranchesPanel(
+    List<PharmacyBranch> visibleBranches,
+    PharmacyBranch? selected,
+    PharmacyBranch? nearest,
+  ) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 12,
+            offset: Offset(0, -3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 38,
+            height: 4,
+            margin: const EdgeInsets.only(top: 8, bottom: 4),
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 7, 16, 7),
+            child: Row(
+              children: [
+                if (nearest != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.green.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text(
+                      _distanceText(nearest),
+                      style: const TextStyle(
+                        color: AppColors.green,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                const Spacer(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'أقرب الفروع إليك',
+                      style: TextStyle(
+                        color: AppColors.primaryDark,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      userPosition != null
+                          ? 'مرتبة حسب المسافة من موقعك'
+                          : 'اختاري فرع الاستلام المناسب',
+                      style: const TextStyle(
+                        color: AppColors.textGray,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
 
           Expanded(
-            child: Column(
+            child: visibleBranches.isEmpty
+                ? _emptyBranches()
+                : ListView.separated(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+                    itemCount: visibleBranches.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final branch = visibleBranches[index];
+
+                      return _BranchCard(
+                        branch: branch,
+                        isSelected: branch.id == selected?.id,
+                        isNearest: branch.id == nearest?.id,
+                        distanceText: _distanceText(branch),
+                        onTap: () => selectBranch(branch),
+                        onOpenMap: () => openBranchLocation(branch),
+                        onDirections: () => _openDirectionsFor(branch),
+                      );
+                    },
+                  ),
+          ),
+
+          _buildBottomAction(selected),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openDirectionsFor(PharmacyBranch branch) async {
+    final location = _branchLocations[branch.id];
+
+    if (location != null) {
+      final uri = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1'
+        '&destination=${location.latitude},${location.longitude}',
+      );
+
+      try {
+        if (await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        )) {
+          return;
+        }
+      } catch (_) {}
+    }
+
+    await openBranchLocation(branch);
+  }
+
+  Widget _emptyBranches() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.07),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                size: 30,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'لم نجد فرعًا بهذا الاسم',
+              style: TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              'جرّبي اسم مدينة أو جزءًا من اسم الفرع',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textGray,
+                fontSize: 10.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomAction(PharmacyBranch? selected) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.border,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          if (selected != null)
+            Row(
               children: [
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Container(
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F6F8),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.border,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: searchController,
-                          textAlign: TextAlign.right,
-                          textDirection: TextDirection.rtl,
-                          decoration: InputDecoration(
-                            hintText: 'ابحثي عن اسم الفرع...',
-                            hintStyle: const TextStyle(
-                              color: AppColors.textGray,
-                              fontSize: 12,
-                            ),
-                            prefixIcon: searchQuery.isNotEmpty
-                                ? IconButton(
-                                    onPressed: searchController.clear,
-                                    icon: const Icon(
-                                      Icons.close,
-                                      size: 19,
-                                      color: AppColors.textGray,
-                                    ),
-                                  )
-                                : null,
-                            suffixIcon: const Icon(
-                              Icons.search,
-                              color: AppColors.primary,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 13,
-                            ),
-                          ),
+                      const Text(
+                        'الفرع المختار',
+                        style: TextStyle(
+                          color: AppColors.textGray,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${visibleBranches.length} فرع',
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const Text(
-                            'اختاري الفرع المناسب للاستلام',
-                            style: TextStyle(
-                              color: AppColors.primaryDark,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                Expanded(
-                  flex: 3,
-                  child: Stack(
-                    children: [
-                      GoogleMap(
-                        initialCameraPosition: const CameraPosition(
-                          target: defaultCenter,
-                          zoom: 8.5,
-                        ),
-                        onMapCreated: (controller) {
-                          mapController = controller;
-                        },
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                        mapToolbarEnabled: false,
-                        compassEnabled: true,
-                      ),
-
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.location_on,
-                                color: AppColors.green,
-                                size: 18,
-                              ),
-                              SizedBox(width: 5),
-                              Text(
-                                'فروع صيدلية الأمل',
-                                style: TextStyle(
-                                  color: AppColors.primaryDark,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
+                      const SizedBox(height: 2),
+                      Text(
+                        selected.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: AppColors.primaryDark,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                Expanded(
-                  flex: 5,
+                const SizedBox(width: 10),
+                InkWell(
+                  onTap: _openSelectedDirections,
+                  borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 8,
-                          offset: Offset(0, -2),
-                        ),
-                      ],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 9,
                     ),
-                    child: Column(
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            16,
-                            12,
-                            16,
-                            8,
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 9,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.green.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '${visibleBranches.length}',
-                                  style: const TextStyle(
-                                    color: AppColors.green,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                              const Spacer(),
-                              const Text(
-                                'الصيدليات القريبة منك',
-                                style: TextStyle(
-                                  color: AppColors.primaryDark,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
+                        Icon(
+                          Icons.directions_rounded,
+                          color: AppColors.primary,
+                          size: 17,
                         ),
-
-                        Expanded(
-                          child: visibleBranches.isEmpty
-                              ? Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(20),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: const [
-                                        Icon(
-                                          Icons.search_off,
-                                          size: 42,
-                                          color: AppColors.textGray,
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          'لا يوجد فرع بهذا الاسم',
-                                          style: TextStyle(
-                                            color: AppColors.primaryDark,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              : ListView.separated(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    2,
-                                    16,
-                                    12,
-                                  ),
-                                  itemCount: visibleBranches.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 9),
-                                  itemBuilder: (context, index) {
-                                    final branch = visibleBranches[index];
-                                    final isSelected =
-                                        branch.id == selectedBranchId;
-
-                                    return _BranchCard(
-                                      branch: branch,
-                                      isSelected: isSelected,
-                                      onTap: () {
-                                        selectBranch(branch);
-                                      },
-                                      onOpenMap: () {
-                                        openBranchLocation(branch);
-                                      },
-                                    );
-                                  },
-                                ),
-                        ),
-
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(
-                            16,
-                            8,
-                            16,
-                            8,
-                          ),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            border: Border(
-                              top: BorderSide(
-                                color: AppColors.border,
-                              ),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              if (selectedBranch != null)
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.green.withValues(
-                                      alpha: 0.06,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: AppColors.green.withValues(
-                                        alpha: 0.25,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.check_circle,
-                                        color: AppColors.green,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          selectedBranch!.name,
-                                          textAlign: TextAlign.right,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: AppColors.primaryDark,
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'الفرع المختار',
-                                        style: TextStyle(
-                                          color: AppColors.green,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                              const SizedBox(height: 10),
-
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: const Text(
-                                  'هل تحتاج ملاحظة؟ (اختياري)',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryDark,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 7),
-
-                              TextField(
-                                controller: noteController,
-                                textAlign: TextAlign.right,
-                                textDirection: TextDirection.rtl,
-                                maxLines: 2,
-                                decoration: InputDecoration(
-                                  hintText: 'مثال: اتصل قبل الوصول',
-                                  hintStyle: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textGray,
-                                  ),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8F9FA),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.border,
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.border,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.primary,
-                                      width: 1.3,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${widget.totalAmount.toStringAsFixed(2)} ر.س',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primaryDark,
-                                    ),
-                                  ),
-                                  const Text(
-                                    'إجمالي الطلب',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textGray,
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              SizedBox(
-                                width: double.infinity,
-                                height: 46,
-                                child: ElevatedButton(
-                                  onPressed: confirmBranch,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.green,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'تأكيد الفرع والمتابعة للدفع',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                        SizedBox(width: 5),
+                        Text(
+                          'الاتجاهات',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ],
@@ -1087,6 +1788,72 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
                 ),
               ],
             ),
+
+          const SizedBox(height: 8),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'إجمالي الطلب',
+                      style: TextStyle(
+                        color: AppColors.textGray,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      '${widget.totalAmount.toStringAsFixed(2)} ر.س',
+                      style: const TextStyle(
+                        color: AppColors.primaryDark,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: confirmBranch,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.green,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'تأكيد الفرع والمتابعة',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(width: 7),
+                        Icon(
+                          Icons.arrow_back_rounded,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1097,14 +1864,20 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
 class _BranchCard extends StatelessWidget {
   final PharmacyBranch branch;
   final bool isSelected;
+  final bool isNearest;
+  final String distanceText;
   final VoidCallback onTap;
   final VoidCallback onOpenMap;
+  final VoidCallback onDirections;
 
   const _BranchCard({
     required this.branch,
     required this.isSelected,
+    required this.isNearest,
+    required this.distanceText,
     required this.onTap,
     required this.onOpenMap,
+    required this.onDirections,
   });
 
   @override
@@ -1113,41 +1886,65 @@ class _BranchCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.green.withValues(alpha: 0.055)
+                ? AppColors.green.withValues(alpha: 0.045)
                 : Colors.white,
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
                   ? AppColors.green
-                  : AppColors.border,
+                  : isNearest
+                      ? AppColors.green.withValues(alpha: 0.45)
+                      : AppColors.border,
               width: isSelected ? 1.4 : 1,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.green.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
+            boxShadow: [
+              if (isSelected || isNearest)
+                BoxShadow(
+                  color: AppColors.green.withValues(alpha: 0.07),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+            ],
           ),
           child: Row(
             children: [
-              Icon(
-                isSelected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: isSelected
-                    ? AppColors.green
-                    : AppColors.border,
-                size: 22,
+              Column(
+                children: [
+                  InkWell(
+                    onTap: onDirections,
+                    borderRadius: BorderRadius.circular(11),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: const Icon(
+                        Icons.directions_rounded,
+                        color: AppColors.primary,
+                        size: 19,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    distanceText,
+                    style: TextStyle(
+                      color: isNearest
+                          ? AppColors.green
+                          : AppColors.textGray,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(width: 10),
@@ -1156,45 +1953,37 @@ class _BranchCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 5,
+                      runSpacing: 4,
                       children: [
+                        if (isNearest)
+                          _smallBadge(
+                            'الأقرب إليك',
+                            AppColors.green,
+                          ),
                         if (isSelected)
-                          Container(
-                            margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.green.withValues(
-                                alpha: 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: const Text(
-                              'مختار',
-                              style: TextStyle(
-                                color: AppColors.green,
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                          _smallBadge(
+                            'مختار',
+                            AppColors.primary,
                           ),
-                        Flexible(
-                          child: Text(
-                            branch.name,
-                            textAlign: TextAlign.right,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.primaryDark,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
                       ],
+                    ),
+
+                    if (isNearest || isSelected)
+                      const SizedBox(height: 5),
+
+                    Text(
+                      branch.name,
+                      textAlign: TextAlign.right,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.primaryDark,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
 
                     const SizedBox(height: 5),
@@ -1202,49 +1991,21 @@ class _BranchCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        const Expanded(
+                        const Icon(
+                          Icons.location_on_outlined,
+                          color: AppColors.textGray,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 3),
+                        const Flexible(
                           child: Text(
-                            'الموقع متوفر على خرائط Google',
+                            'موقع الفرع متوفر على خرائط Google',
                             textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: AppColors.textGray,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        InkWell(
-                          onTap: onOpenMap,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(
-                                alpha: 0.07,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.directions,
-                                  size: 15,
-                                  color: AppColors.primary,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'الموقع',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
+                              fontSize: 9,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -1253,8 +2014,56 @@ class _BranchCard extends StatelessWidget {
                   ],
                 ),
               ),
+
+              const SizedBox(width: 9),
+
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 27,
+                height: 27,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? AppColors.green
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.green
+                        : AppColors.border,
+                    width: isSelected ? 2 : 1.5,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 17,
+                      )
+                    : null,
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _smallBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 7,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );

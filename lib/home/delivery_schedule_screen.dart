@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/app_colors.dart';
 import '../core/app_strings.dart';
 import '../models/delivery_address.dart';
-import '../widgets/checkout_stepper.dart';
 import 'payment_method_screen.dart';
 
 class DeliveryScheduleScreen extends StatefulWidget {
@@ -21,12 +21,20 @@ class DeliveryScheduleScreen extends StatefulWidget {
 }
 
 class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
-  late final List<DateTime> days;
-  late DateTime selectedDay;
+  // عدد الأيام المعروضة
+  static const int _daysCount = 7;
 
-  List<_TimeSlot> timeSlots = [];
+  // أقل مدة تحضير قبل بداية الموعد (بالساعات)
+  static const int _minLeadHours = 1;
 
-  int? selectedSlotIndex;
+  late final List<DateTime> _days;
+  late DateTime _selectedDay;
+
+  List<_TimeSlot> _timeSlots = [];
+  int? _selectedSlotIndex;
+
+  bool _isLoading = true;
+  int _requestId = 0;
 
   @override
   void initState() {
@@ -34,56 +42,82 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
 
     final today = DateTime.now();
 
-    days = List.generate(
-      4,
-      (index) => DateTime(
-        today.year,
-        today.month,
-        today.day + index,
-      ),
+    _days = List.generate(
+      _daysCount,
+      (i) => DateTime(today.year, today.month, today.day + i),
     );
 
-    selectedDay = days.first;
+    _selectedDay = _days.first;
 
-    _updateTimeSlots(selectedDay);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadSlots(_selectedDay, autoAdvance: true);
+    });
   }
 
   // ======================================================
-  // الأوقات المتاحة حسب اليوم
+  // الأوقات المتاحة
   //
-  // هذا الجزء جاهز لاحقًا للربط مع API.
-  // حاليًا يتم عرض جدول محلي للتجربة.
+  // جاهزة للربط مع API: استبدل محتوى الدالة بطلب الشبكة
+  // وأرجع نفس القائمة من _TimeSlot.
+  // حاليًا تُحسب محليًا، والأوقات التي فات موعدها (أو أقل
+  // من مدة التحضير) تظهر كغير متاحة لليوم الحالي.
   // ======================================================
 
-  List<_TimeSlot> _getTimeSlotsForDay(DateTime date) {
-    // أوقات التوصيل من 8 صباحًا إلى 4 عصرًا
-    return const [
-      _TimeSlot('08:00 - 09:00 ص', true),
-      _TimeSlot('09:00 - 10:00 ص', true),
-      _TimeSlot('10:00 - 11:00 ص', true),
-      _TimeSlot('11:00 - 12:00 م', true),
-      _TimeSlot('12:00 - 01:00 م', true),
-      _TimeSlot('01:00 - 02:00 م', true),
-      _TimeSlot('02:00 - 03:00 م', true),
-      _TimeSlot('03:00 - 04:00 م', true),
-    ];
+  static const List<_SlotTemplate> _templates = [
+    _SlotTemplate('08:00 - 09:00 ص', 8),
+    _SlotTemplate('09:00 - 10:00 ص', 9),
+    _SlotTemplate('10:00 - 11:00 ص', 10),
+    _SlotTemplate('11:00 - 12:00 م', 11),
+    _SlotTemplate('12:00 - 01:00 م', 12),
+    _SlotTemplate('01:00 - 02:00 م', 13),
+    _SlotTemplate('02:00 - 03:00 م', 14),
+    _SlotTemplate('03:00 - 04:00 م', 15),
+  ];
+
+  Future<List<_TimeSlot>> _fetchTimeSlotsForDay(DateTime date) async {
+    // محاكاة زمن الشبكة
+    await Future.delayed(const Duration(milliseconds: 380));
+
+    final earliest = DateTime.now().add(const Duration(hours: _minLeadHours));
+
+    return _templates.map((t) {
+      final start = DateTime(date.year, date.month, date.day, t.startHour);
+      return _TimeSlot(
+        label: t.label,
+        startHour: t.startHour,
+        available: start.isAfter(earliest),
+      );
+    }).toList();
   }
 
-  void _updateTimeSlots(DateTime date) {
-    final slots = _getTimeSlotsForDay(date);
+  Future<void> _loadSlots(DateTime day, {bool autoAdvance = false}) async {
+    final id = ++_requestId;
 
-    int? firstAvailable;
+    setState(() {
+      _selectedDay = day;
+      _isLoading = true;
+      _selectedSlotIndex = null;
+    });
 
-    for (int i = 0; i < slots.length; i++) {
-      if (slots[i].available) {
-        firstAvailable = i;
-        break;
+    final slots = await _fetchTimeSlotsForDay(day);
+
+    if (!mounted || id != _requestId) return;
+
+    final firstAvailable = slots.indexWhere((s) => s.available);
+
+    // إذا انتهت أوقات اليوم (مثلاً بعد العصر) ننتقل لأقرب يوم متاح
+    if (firstAvailable == -1 && autoAdvance) {
+      final next = _days.indexWhere((d) => d.isAfter(day));
+      if (next != -1) {
+        _loadSlots(_days[next], autoAdvance: true);
+        return;
       }
     }
 
     setState(() {
-      timeSlots = slots;
-      selectedSlotIndex = firstAvailable;
+      _timeSlots = slots;
+      _selectedSlotIndex = firstAvailable == -1 ? null : firstAvailable;
+      _isLoading = false;
     });
   }
 
@@ -143,46 +177,46 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
     }
   }
 
-  bool _isToday(DateTime date) {
-    final today = DateTime.now();
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
-    return date.year == today.year &&
-        date.month == today.month &&
-        date.day == today.day;
-  }
+  bool _isToday(DateTime date) => _sameDay(date, DateTime.now());
 
-  String _dayLabel(DateTime date) {
-    if (_isToday(date)) {
-      return AppStrings.today;
-    }
+  String _dayLabel(DateTime date) =>
+      _isToday(date) ? AppStrings.today : _dayName(date);
 
-    return _dayName(date);
-  }
-
-  String _formattedDate(DateTime date) {
-    return '${date.day} ${_monthName(date)}';
-  }
+  String _formattedDate(DateTime date) => '${date.day} ${_monthName(date)}';
 
   // ======================================================
-  // تأكيد الموعد
+  // التفاعل
   // ======================================================
 
-  void confirmSchedule() {
-    if (selectedSlotIndex == null ||
-        selectedSlotIndex! >= timeSlots.length) {
+  void _selectDay(DateTime day) {
+    if (_sameDay(day, _selectedDay)) return;
+    HapticFeedback.selectionClick();
+    _loadSlots(day);
+  }
+
+  void _selectSlot(int index) {
+    if (_selectedSlotIndex == index) return;
+    HapticFeedback.selectionClick();
+    setState(() => _selectedSlotIndex = index);
+  }
+
+  void _confirmSchedule() {
+    final index = _selectedSlotIndex;
+
+    if (index == null || index >= _timeSlots.length) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.selectDeliveryTime),
-        ),
+        SnackBar(content: Text(AppStrings.selectDeliveryTime)),
       );
       return;
     }
 
-    final selectedSlot = timeSlots[selectedSlotIndex!];
+    final slot = _timeSlots[index];
+    if (!slot.available) return;
 
-    if (!selectedSlot.available) {
-      return;
-    }
+    HapticFeedback.lightImpact();
 
     Navigator.push(
       context,
@@ -192,7 +226,7 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
           isPickup: false,
           addressLine:
               '${widget.address.addressLine}, ${widget.address.city}',
-          timeSlot: '${_formattedDate(selectedDay)} - ${selectedSlot.label}',
+          timeSlot: '${_formattedDate(_selectedDay)} - ${slot.label}',
           destinationLat: widget.address.latitude,
           destinationLng: widget.address.longitude,
         ),
@@ -201,31 +235,8 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
   }
 
   // ======================================================
-  // تغيير اليوم
+  // البناء
   // ======================================================
-
-  void _selectDay(DateTime day) {
-    if (day == selectedDay) {
-      return;
-    }
-
-    final slots = _getTimeSlotsForDay(day);
-
-    int? firstAvailable;
-
-    for (int i = 0; i < slots.length; i++) {
-      if (slots[i].available) {
-        firstAvailable = i;
-        break;
-      }
-    }
-
-    setState(() {
-      selectedDay = day;
-      timeSlots = slots;
-      selectedSlotIndex = firstAvailable;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -234,9 +245,8 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(
-          color: AppColors.primaryDark,
-        ),
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primaryDark),
         centerTitle: true,
         title: Text(
           AppStrings.deliveryAppointment,
@@ -252,466 +262,201 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ==================================================
-            // شريط التقدم
-            // ==================================================
-
-            const CheckoutStepper(currentStep: 1),
-
-            const SizedBox(height: 26),
-
-            // ==================================================
-            // اختيار اليوم
-            // ==================================================
-
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                AppStrings.chooseDay,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryDark,
-                ),
-              ),
+            const SizedBox(height: 8),
+            _SectionHeader(
+              title: AppStrings.chooseDay,
+              subtitle: AppStrings.chooseDeliveryDayDescription,
             ),
-
-            const SizedBox(height: 4),
-
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                AppStrings.chooseDeliveryDayDescription,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textGray,
-                ),
-              ),
-            ),
-
             const SizedBox(height: 14),
-
-            SizedBox(
-              height: 86,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                reverse: true,
-                itemCount: days.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: 10),
-                itemBuilder: (context, index) {
-                  final day = days[index];
-
-                  final isSelected =
-                      day.year == selectedDay.year &&
-                          day.month == selectedDay.month &&
-                          day.day == selectedDay.day;
-
-                  return InkWell(
-                    onTap: () => _selectDay(day),
-                    borderRadius: BorderRadius.circular(14),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 76,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.green
-                            : AppColors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.green
-                              : AppColors.border,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.green
-.withValues(alpha: 0.16),                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _dayLabel(day),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.textGray,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            '${day.day}',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.primaryDark,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _monthName(day),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.textGray,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
+            _buildDaysList(),
             const SizedBox(height: 26),
-
-            // ==================================================
-            // اليوم المختار
-            // ==================================================
-
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF7FAF8),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.border,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-color: AppColors.green.withValues(alpha: 0.12),                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.calendar_month_outlined,
-                      color: AppColors.green,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppStrings.selectedDeliveryDay,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textGray,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${_dayLabel(selectedDay)}، ${_formattedDate(selectedDay)}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            _SectionHeader(
+              title: AppStrings.chooseTime,
+              subtitle: AppStrings.chooseDeliveryTimeDescription,
             ),
-
-            const SizedBox(height: 26),
-
-            // ==================================================
-            // اختيار الوقت
-            // ==================================================
-
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                AppStrings.chooseTime,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 4),
-
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                AppStrings.chooseDeliveryTimeDescription,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textGray,
-                ),
-              ),
-            ),
-
             const SizedBox(height: 14),
-
-            // ==================================================
-            // الأوقات
-            // ==================================================
-
-            if (timeSlots.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.border,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.schedule_outlined,
-                      size: 34,
-                      color: AppColors.textGray,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      AppStrings.noDeliveryTimes,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textGray,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              GridView.builder(
-                shrinkWrap: true,
-                physics:
-                    const NeverScrollableScrollPhysics(),
-                itemCount: timeSlots.length,
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 2.25,
-                ),
-                itemBuilder: (context, index) {
-                  final slot = timeSlots[index];
-
-                  final isSelected =
-                      selectedSlotIndex == index;
-
-                  return InkWell(
-                    onTap: slot.available
-                        ? () {
-                            setState(() {
-                              selectedSlotIndex = index;
-                            });
-                          }
-                        : null,
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration:
-                          const Duration(milliseconds: 160),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: !slot.available
-                            ? const Color(0xFFF4F4F4)
-                            : isSelected
-                                ? AppColors.green
-                                : AppColors.white,
-                        borderRadius:
-                            BorderRadius.circular(12),
-                        border: Border.all(
-                          color: !slot.available
-                              ? AppColors.border
-                              : isSelected
-                                  ? AppColors.green
-                                  : AppColors.border,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.green
-.withValues(alpha: 0.14),                                  blurRadius: 7,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            slot.available
-                                ? Icons.access_time_rounded
-                                : Icons.block_outlined,
-                            size: 18,
-                            color: !slot.available
-                                ? AppColors.textGray
-                                : isSelected
-                                    ? Colors.white
-                                    : AppColors.green,
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            slot.available
-                                ? slot.label
-                                : AppStrings.full,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: !slot.available
-                                  ? AppColors.textGray
-                                  : isSelected
-                                      ? Colors.white
-                                      : AppColors.primaryDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-            const SizedBox(height: 24),
-
-            // ==================================================
-            // ملخص الموعد
-            // ==================================================
-
-            if (selectedSlotIndex != null &&
-                selectedSlotIndex! < timeSlots.length)
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.border,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color:
-AppColors.green.withValues(alpha: 0.12),                        borderRadius:
-                            BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.local_shipping_outlined,
-                        color: AppColors.green,
-                        size: 21,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppStrings.deliverySummary,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textGray,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${_dayLabel(selectedDay)}، ${_formattedDate(selectedDay)}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color:
-                                  AppColors.primaryDark,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            timeSlots[selectedSlotIndex!]
-                                .label,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textGray,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.check_circle,
-                      color: AppColors.green,
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ),
-
-            const SizedBox(height: 24),
-
-            // ==================================================
-            // زر التأكيد
-            // ==================================================
-
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: selectedSlotIndex != null
-                    ? confirmSchedule
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.green,
-                  disabledBackgroundColor:
-                      AppColors.border,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  AppStrings.confirmAppointment,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: KeyedSubtree(
+                key: ValueKey('${_selectedDay.toIso8601String()}_$_isLoading'),
+                child: _buildSlotsSection(),
               ),
             ),
           ],
+        ),
+      ),
+      bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  // ---------------- الأيام ----------------
+
+  Widget _buildDaysList() {
+    return SizedBox(
+      height: 92,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        reverse: true,
+        clipBehavior: Clip.none,
+        itemCount: _days.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final day = _days[index];
+          return _DayCard(
+            dayLabel: _dayLabel(day),
+            dayNumber: '${day.day}',
+            monthLabel: _monthName(day),
+            isSelected: _sameDay(day, _selectedDay),
+            isToday: _isToday(day),
+            onTap: () => _selectDay(day),
+          );
+        },
+      ),
+    );
+  }
+
+  // ---------------- الأوقات ----------------
+
+  Widget _buildSlotsSection() {
+    if (_isLoading) {
+      return const _SlotsSkeleton();
+    }
+
+    final hasAvailable = _timeSlots.any((s) => s.available);
+
+    if (_timeSlots.isEmpty || !hasAvailable) {
+      return _EmptySlots(message: AppStrings.noDeliveryTimes);
+    }
+
+    final morning = <int>[];
+    final afternoon = <int>[];
+
+    for (var i = 0; i < _timeSlots.length; i++) {
+      (_timeSlots[i].startHour < 12 ? morning : afternoon).add(i);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (morning.isNotEmpty) ...[
+          _GroupLabel(
+            icon: Icons.wb_sunny_outlined,
+            label: _Labels.morning,
+          ),
+          const SizedBox(height: 10),
+          _buildSlotGrid(morning),
+        ],
+        if (morning.isNotEmpty && afternoon.isNotEmpty)
+          const SizedBox(height: 18),
+        if (afternoon.isNotEmpty) ...[
+          _GroupLabel(
+            icon: Icons.wb_twilight_outlined,
+            label: _Labels.afternoon,
+          ),
+          const SizedBox(height: 10),
+          _buildSlotGrid(afternoon),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSlotGrid(List<int> indices) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: indices.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 2.4,
+      ),
+      itemBuilder: (context, i) {
+        final index = indices[i];
+        final slot = _timeSlots[index];
+
+        return _StaggeredIn(
+          order: i,
+          child: _SlotTile(
+            label: slot.available ? slot.label : AppStrings.full,
+            available: slot.available,
+            isSelected: _selectedSlotIndex == index,
+            onTap: slot.available ? () => _selectSlot(index) : null,
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------------- الشريط السفلي ----------------
+
+  Widget _buildBottomBar() {
+    final index = _selectedSlotIndex;
+    final hasSelection =
+        index != null && index < _timeSlots.length && !_isLoading;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: const Border(top: BorderSide(color: AppColors.border)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                alignment: Alignment.topCenter,
+                child: hasSelection
+                    ? Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _SummaryRow(
+                          title: AppStrings.deliverySummary,
+                          dateText:
+                              '${_dayLabel(_selectedDay)}، ${_formattedDate(_selectedDay)}',
+                          timeText: _timeSlots[index].label,
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
+              ),
+              SizedBox(
+                height: 52,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: hasSelection ? _confirmSchedule : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.green,
+                    disabledBackgroundColor: AppColors.border,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    AppStrings.confirmAppointment,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -719,15 +464,482 @@ AppColors.green.withValues(alpha: 0.12),                        borderRadius:
 }
 
 // ======================================================
-// نموذج وقت التوصيل
+// نصوص محلية للتجميع الزمني
+// (يفضّل نقلها لاحقًا إلى AppStrings)
 // ======================================================
+
+class _Labels {
+  static const String morning = 'الفترة الصباحية';
+  static const String afternoon = 'فترة الظهيرة';
+}
+
+// ======================================================
+// عناصر الواجهة
+// ======================================================
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _SectionHeader({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textGray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GroupLabel extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _GroupLabel({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.green),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DayCard extends StatelessWidget {
+  final String dayLabel;
+  final String dayNumber;
+  final String monthLabel;
+  final bool isSelected;
+  final bool isToday;
+  final VoidCallback onTap;
+
+  const _DayCard({
+    required this.dayLabel,
+    required this.dayNumber,
+    required this.monthLabel,
+    required this.isSelected,
+    required this.isToday,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mainColor = isSelected ? Colors.white : AppColors.primaryDark;
+    final subColor = isSelected ? Colors.white : AppColors.textGray;
+
+    return AnimatedScale(
+      scale: isSelected ? 1.04 : 1.0,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutBack,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        width: 78,
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.green : AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.green : AppColors.border,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.green.withValues(alpha: 0.28),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : const [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 9),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    dayLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: subColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    dayNumber,
+                    style: TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                      color: mainColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    monthLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10, color: subColor),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SlotTile extends StatelessWidget {
+  final String label;
+  final bool available;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  const _SlotTile({
+    required this.label,
+    required this.available,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = !available
+        ? const Color(0xFFF4F4F4)
+        : isSelected
+            ? AppColors.green
+            : AppColors.white;
+
+    final Color borderColor =
+        available && isSelected ? AppColors.green : AppColors.border;
+
+    final Color iconColor = !available
+        ? AppColors.textGray
+        : isSelected
+            ? Colors.white
+            : AppColors.green;
+
+    final Color textColor = !available
+        ? AppColors.textGray
+        : isSelected
+            ? Colors.white
+            : AppColors.primaryDark;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: AppColors.green.withValues(alpha: 0.22),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : const [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                available
+                    ? (isSelected
+                        ? Icons.check_circle_rounded
+                        : Icons.access_time_rounded)
+                    : Icons.block_outlined,
+                size: 17,
+                color: iconColor,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                    decoration: available ? null : TextDecoration.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final String title;
+  final String dateText;
+  final String timeText;
+
+  const _SummaryRow({
+    required this.title,
+    required this.dateText,
+    required this.timeText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAF8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.green.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.local_shipping_outlined,
+              color: AppColors.green,
+              size: 21,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textGray,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '$dateText  •  $timeText',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.check_circle, color: AppColors.green, size: 22),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptySlots extends StatelessWidget {
+  final String message;
+
+  const _EmptySlots({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.schedule_outlined,
+            size: 38,
+            color: AppColors.textGray,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textGray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ======================================================
+// هيكل التحميل (Skeleton)
+// ======================================================
+
+class _SlotsSkeleton extends StatefulWidget {
+  const _SlotsSkeleton();
+
+  @override
+  State<_SlotsSkeleton> createState() => _SlotsSkeletonState();
+}
+
+class _SlotsSkeletonState extends State<_SlotsSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final color = Color.lerp(
+          const Color(0xFFF1F3F2),
+          const Color(0xFFE4E8E6),
+          _controller.value,
+        )!;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 8,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.4,
+          ),
+          itemBuilder: (_, __) => DecoratedBox(
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ======================================================
+// ظهور متدرج للعناصر
+// ======================================================
+
+class _StaggeredIn extends StatelessWidget {
+  final int order;
+  final Widget child;
+
+  const _StaggeredIn({required this.order, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 260 + order * 50),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, (1 - value) * 14),
+          child: child,
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ======================================================
+// النماذج
+// ======================================================
+
+class _SlotTemplate {
+  final String label;
+  final int startHour;
+
+  const _SlotTemplate(this.label, this.startHour);
+}
 
 class _TimeSlot {
   final String label;
+  final int startHour;
   final bool available;
 
-  const _TimeSlot(
-    this.label,
-    this.available,
-  );
+  const _TimeSlot({
+    required this.label,
+    required this.startHour,
+    required this.available,
+  });
 }

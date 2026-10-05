@@ -27,26 +27,21 @@ class VerifyCodeScreen extends StatefulWidget {
   });
 
   @override
-  State<VerifyCodeScreen> createState() =>
-      _VerifyCodeScreenState();
+  State<VerifyCodeScreen> createState() => _VerifyCodeScreenState();
 }
 
-class _VerifyCodeScreenState
-    extends State<VerifyCodeScreen> {
+class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   // Firebase SMS code = 6 أرقام
   static const int codeLength = 6;
 
+  // مدة انتظار إغلاق الكيبورد قبل الانتقال (يمنع الشاشة الحمراء)
+  static const Duration _settleDelay = Duration(milliseconds: 350);
+
   final List<TextEditingController> controllers =
-      List.generate(
-    codeLength,
-    (_) => TextEditingController(),
-  );
+      List.generate(codeLength, (_) => TextEditingController());
 
   final List<FocusNode> focusNodes =
-      List.generate(
-    codeLength,
-    (_) => FocusNode(),
-  );
+      List.generate(codeLength, (_) => FocusNode());
 
   Timer? timer;
 
@@ -77,31 +72,22 @@ class _VerifyCodeScreenState
 
     timer?.cancel();
 
-    timer = Timer.periodic(
-      const Duration(seconds: 1),
-      (t) {
-        if (secondsLeft == 0) {
-          t.cancel();
-        } else {
-          if (mounted) {
-            setState(() {
-              secondsLeft--;
-            });
-          }
-        }
-      },
-    );
+    timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (secondsLeft == 0) {
+        t.cancel();
+      } else if (mounted) {
+        setState(() {
+          secondsLeft--;
+        });
+      }
+    });
   }
 
   // ============================================================
   // الرمز
   // ============================================================
 
-  String get code {
-    return controllers
-        .map((controller) => controller.text)
-        .join();
-  }
+  String get code => controllers.map((c) => c.text).join();
 
   // ============================================================
   // إعادة إرسال الرمز
@@ -117,16 +103,11 @@ class _VerifyCodeScreenState
     try {
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: widget.phone,
-
         forceResendingToken: resendToken,
-
-        verificationCompleted:
-            (PhoneAuthCredential credential) async {
+        verificationCompleted: (PhoneAuthCredential credential) async {
           // لا نحتاج تنفيذ تلقائي هنا.
         },
-
-        verificationFailed:
-            (FirebaseAuthException e) {
+        verificationFailed: (FirebaseAuthException e) {
           if (!mounted) return;
 
           setState(() {
@@ -141,12 +122,7 @@ class _VerifyCodeScreenState
             ),
           );
         },
-
-        codeSent:
-            (
-          String newVerificationId,
-          int? newResendToken,
-        ) {
+        codeSent: (String newVerificationId, int? newResendToken) {
           if (!mounted) return;
 
           setState(() {
@@ -159,16 +135,10 @@ class _VerifyCodeScreenState
           _startTimer();
 
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppStrings.codeResent,
-              ),
-            ),
+            SnackBar(content: Text(AppStrings.codeResent)),
           );
         },
-
-        codeAutoRetrievalTimeout:
-            (String newVerificationId) {
+        codeAutoRetrievalTimeout: (String newVerificationId) {
           verificationId = newVerificationId;
         },
       );
@@ -181,9 +151,7 @@ class _VerifyCodeScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'حدث خطأ أثناء إعادة إرسال الرمز',
-          ),
+          content: Text('حدث خطأ أثناء إعادة إرسال الرمز'),
         ),
       );
     }
@@ -208,49 +176,36 @@ class _VerifyCodeScreenState
   // ============================================================
 
   Future<void> verify() async {
-    FocusScope.of(context).unfocus();
+    if (loading) return;
+
+    FocusManager.instance.primaryFocus?.unfocus();
 
     if (code.length != codeLength) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'أدخل رمز التحقق المكون من 6 أرقام',
-          ),
+          content: Text('أدخل رمز التحقق المكون من 6 أرقام'),
         ),
       );
 
       return;
     }
 
-    if (loading) return;
-
     setState(() {
       loading = true;
     });
 
     try {
-      // ==========================================================
       // إنشاء Firebase credential
-      // ==========================================================
-
-      final PhoneAuthCredential credential =
-          PhoneAuthProvider.credential(
+      final PhoneAuthCredential credential = PhoneAuthProvider.credential(
         verificationId: verificationId,
         smsCode: code,
       );
 
-      // ==========================================================
       // تسجيل الدخول / إنشاء المستخدم في Firebase
-      // ==========================================================
-
       final UserCredential userCredential =
-          await FirebaseAuth.instance
-              .signInWithCredential(credential);
+          await FirebaseAuth.instance.signInWithCredential(credential);
 
-      // ==========================================================
       // حفظ اسم المستخدم في Firebase
-      // ==========================================================
-
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -261,37 +216,34 @@ class _VerifyCodeScreenState
 
       if (!mounted) return;
 
-      setState(() {
-        loading = false;
-      });
-
       // ==========================================================
+      // ننتظر انتهاء حركة إغلاق الكيبورد قبل أي انتقال
+      // (هذا هو سبب الشاشة الحمراء _dependents.isEmpty)
+      // وزر التحقق يبقى معطّلًا (loading) خلال الانتظار.
+      // ==========================================================
+
+      await Future.delayed(_settleDelay);
+
+      if (!mounted) return;
+
       // إذا كان المستخدم قادم من تسجيل الضيف
-      // ==========================================================
-
       if (widget.isGuest) {
-        // حفظ بيانات المستخدم في التطبيق
         UserService.instance.loginAsGuestUser(
           name: widget.name,
           phone: widget.phone,
         );
 
-        // نرجع فقط للشاشة السابقة
-        // بدون حذف السلة أو مسار الطلب
+        // نرجع فقط للشاشة السابقة بدون حذف السلة أو مسار الطلب
         Navigator.pop(context, true);
 
         return;
       }
 
-      // ==========================================================
       // التسجيل العادي
-      // ==========================================================
-
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              const AccountCreatedScreen(),
+          builder: (_) => const AccountCreatedScreen(),
         ),
         (route) => false,
       );
@@ -304,34 +256,22 @@ class _VerifyCodeScreenState
 
       String message = 'رمز التحقق غير صحيح';
 
-      if (e.code ==
-          'invalid-verification-code') {
+      if (e.code == 'invalid-verification-code') {
         message = 'رمز التحقق غير صحيح';
-      } else if (e.code ==
-          'session-expired') {
-        message =
-            'انتهت صلاحية رمز التحقق، أعد إرسال رمز جديد';
-      } else if (e.code ==
-          'invalid-verification-id') {
-        message =
-            'انتهت جلسة التحقق، أعد إرسال الرمز';
-      } else if (e.code ==
-          'credential-already-in-use') {
-        message =
-            'هذا الرقم مرتبط بحساب موجود بالفعل';
-      } else if (e.code ==
-          'too-many-requests') {
-        message =
-            'تمت محاولات كثيرة، حاول مرة أخرى لاحقًا';
-      } else if (e.message != null &&
-          e.message!.isNotEmpty) {
+      } else if (e.code == 'session-expired') {
+        message = 'انتهت صلاحية رمز التحقق، أعد إرسال رمز جديد';
+      } else if (e.code == 'invalid-verification-id') {
+        message = 'انتهت جلسة التحقق، أعد إرسال الرمز';
+      } else if (e.code == 'credential-already-in-use') {
+        message = 'هذا الرقم مرتبط بحساب موجود بالفعل';
+      } else if (e.code == 'too-many-requests') {
+        message = 'تمت محاولات كثيرة، حاول مرة أخرى لاحقًا';
+      } else if (e.message != null && e.message!.isNotEmpty) {
         message = e.message!;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-        ),
+        SnackBar(content: Text(message)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -342,9 +282,7 @@ class _VerifyCodeScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'حدث خطأ أثناء التحقق، حاول مرة أخرى',
-          ),
+          content: Text('حدث خطأ أثناء التحقق، حاول مرة أخرى'),
         ),
       );
     }
@@ -373,31 +311,27 @@ class _VerifyCodeScreenState
   // الصفحة
   // ============================================================
 
+  OutlineInputBorder _border(Color color, [double width = 1]) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide(color: color, width: width),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          const Color(0xffF7F9FC),
-
+      backgroundColor: const Color(0xffF7F9FC),
       appBar: AppBar(
-        backgroundColor:
-            const Color(0xffF7F9FC),
+        backgroundColor: const Color(0xffF7F9FC),
         elevation: 0,
-        foregroundColor:
-            const Color(0xff123B72),
+        foregroundColor: const Color(0xff123B72),
       ),
-
       body: SafeArea(
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 25,
-          ),
-
+          padding: const EdgeInsets.symmetric(horizontal: 25),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.stretch,
-
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 8),
 
@@ -407,8 +341,7 @@ class _VerifyCodeScreenState
                 style: const TextStyle(
                   color: Color(0xff123B72),
                   fontSize: 19,
-                  fontWeight:
-                      FontWeight.w800,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
 
@@ -426,177 +359,78 @@ class _VerifyCodeScreenState
 
               const SizedBox(height: 28),
 
-              // ==================================================
               // خانات الرمز - 6 أرقام
-              // ==================================================
-
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
-
-                children:
-                    List.generate(
-                  codeLength,
-                  (i) {
-                    return Container(
-                      width: 45,
-                      height: 52,
-                      margin:
-                          const EdgeInsets.symmetric(
-                        horizontal: 3,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(codeLength, (i) {
+                  return Container(
+                    width: 45,
+                    height: 52,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    child: TextField(
+                      controller: controllers[i],
+                      focusNode: focusNodes[i],
+                      enabled: !loading,
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      maxLength: 1,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xff123B72),
                       ),
-
-                      child: TextField(
-                        controller:
-                            controllers[i],
-
-                        focusNode:
-                            focusNodes[i],
-
-                        textAlign:
-                            TextAlign.center,
-
-                        keyboardType:
-                            TextInputType.number,
-
-                        maxLength: 1,
-
-                        inputFormatters: [
-                          FilteringTextInputFormatter
-                              .digitsOnly,
-                        ],
-
-                        style:
-                            const TextStyle(
-                          fontSize: 18,
-                          fontWeight:
-                              FontWeight.w800,
-                          color:
-                              Color(0xff123B72),
-                        ),
-
-                        decoration:
-                            InputDecoration(
-                          counterText: '',
-                          filled: true,
-                          fillColor:
-                              Colors.white,
-
-                          border:
-                              OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius
-                                    .circular(
-                              8,
-                            ),
-                            borderSide:
-                                const BorderSide(
-                              color: Color(
-                                0xffDDE5EF,
-                              ),
-                            ),
-                          ),
-
-                          enabledBorder:
-                              OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius
-                                    .circular(
-                              8,
-                            ),
-                            borderSide:
-                                const BorderSide(
-                              color: Color(
-                                0xffDDE5EF,
-                              ),
-                            ),
-                          ),
-
-                          focusedBorder:
-                              OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius
-                                    .circular(
-                              8,
-                            ),
-                            borderSide:
-                                const BorderSide(
-                              color: Color(
-                                0xff0E4595,
-                              ),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-
-                        onChanged:
-                            (value) {
-                          if (value.isNotEmpty &&
-                              i <
-                                  codeLength - 1) {
-                            focusNodes[
-                              i + 1
-                            ].requestFocus();
-                          }
-
-                          if (value.isEmpty &&
-                              i > 0) {
-                            focusNodes[
-                              i - 1
-                            ].requestFocus();
-                          }
-
-                          if (i ==
-                                  codeLength -
-                                      1 &&
-                              value.isNotEmpty) {
-                            verify();
-                          }
-                        },
+                      decoration: InputDecoration(
+                        counterText: '',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: _border(const Color(0xffDDE5EF)),
+                        enabledBorder: _border(const Color(0xffDDE5EF)),
+                        disabledBorder: _border(const Color(0xffDDE5EF)),
+                        focusedBorder: _border(const Color(0xff0E4595), 1.5),
                       ),
-                    );
-                  },
-                ),
+                      onChanged: (value) {
+                        if (value.isNotEmpty && i < codeLength - 1) {
+                          focusNodes[i + 1].requestFocus();
+                        }
+
+                        if (value.isEmpty && i > 0) {
+                          focusNodes[i - 1].requestFocus();
+                        }
+
+                        if (i == codeLength - 1 && value.isNotEmpty) {
+                          verify();
+                        }
+                      },
+                    ),
+                  );
+                }),
               ),
 
               const SizedBox(height: 24),
 
-              // ==================================================
               // المؤقت
-              // ==================================================
-
               if (secondsLeft > 0)
                 Text(
                   '${AppStrings.didNotReceiveCode} '
                   '00:${secondsLeft.toString().padLeft(2, '0')}',
-
-                  textAlign:
-                      TextAlign.center,
-
-                  style:
-                      const TextStyle(
-                    color:
-                        Color(0xff7D8CA3),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xff7D8CA3),
                     fontSize: 11.5,
                   ),
                 )
               else
                 Center(
                   child: TextButton(
-                    onPressed:
-                        loading
-                            ? null
-                            : resend,
-
+                    onPressed: loading ? null : resend,
                     child: Text(
                       AppStrings.resendCode,
-
-                      style:
-                          const TextStyle(
-                        color:
-                            Color(0xff0E4595),
-                        fontWeight:
-                            FontWeight.w700,
+                      style: const TextStyle(
+                        color: Color(0xff0E4595),
+                        fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
                     ),
@@ -605,71 +439,35 @@ class _VerifyCodeScreenState
 
               const SizedBox(height: 18),
 
-              // ==================================================
               // زر التحقق
-              // ==================================================
-
               SizedBox(
                 height: 47,
-
-                child:
-                    ElevatedButton(
-                  onPressed:
-                      loading
-                          ? null
-                          : verify,
-
-                  style:
-                      ElevatedButton
-                          .styleFrom(
-                    backgroundColor:
-                        const Color(
-                      0xff2EAD59,
-                    ),
-
-                    foregroundColor:
-                        Colors.white,
-
-                    disabledBackgroundColor:
-                        const Color(
-                      0xffA9D7B8,
-                    ),
-
+                child: ElevatedButton(
+                  onPressed: loading ? null : verify,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff2EAD59),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xffA9D7B8),
                     elevation: 0,
-
-                    shape:
-                        RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(
-                        7,
-                      ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(7),
                     ),
                   ),
-
                   child: loading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-
-                          child:
-                              CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
-
                             valueColor:
-                                AlwaysStoppedAnimation<
-                                    Color>(
-                              Colors.white,
-                            ),
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : Text(
                           AppStrings.verify,
-
-                          style:
-                              const TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
-                            fontWeight:
-                                FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                 ),

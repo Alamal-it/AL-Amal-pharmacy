@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_colors.dart';
-import '../widgets/checkout_stepper.dart';
 import 'payment_method_screen.dart';
 
 class PharmacyBranch {
@@ -1046,6 +1045,13 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
       MaterialPageRoute(
         builder: (_) => PaymentMethodScreen(
           totalAmount: widget.totalAmount,
+          isPickup: true,
+          branchName: branch.name,
+          branchMapUrl: branch.mapUrl,
+          branchLat: _branchLocations[branch.id]?.latitude,
+          branchLng: _branchLocations[branch.id]?.longitude,
+          userLat: userPosition?.latitude,
+          userLng: userPosition?.longitude,
         ),
       ),
     );
@@ -1064,7 +1070,7 @@ class _BranchPickerScreenState extends State<BranchPickerScreen> {
         child: Column(
           children: [
             _buildHeader(),
-            const CheckoutStepper(currentStep: 0),
+
             Expanded(
               child: Column(
                 children: [
